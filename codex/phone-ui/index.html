@@ -1,0 +1,666 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>PLOT Phone UI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="phone">
+    <div class="status">
+      <span>9:41</span>
+      <div class="status-icons">
+        <span class="dot"></span>
+        <span class="dot"></span>
+        <span class="dot"></span>
+        <span class="battery"></span>
+      </div>
+    </div>
+
+    <main class="app">
+      <section id="home" class="screen active">
+        <header class="hero">
+          <div class="brand-row">
+            <div class="brand">
+            <div class="logo">RT</div>
+            <div>
+              <div class="brand-title">PLOT</div>
+              <div class="brand-sub">Your movie + series log</div>
+            </div>
+          </div>
+            <button class="icon-btn gear" data-open="settings" aria-label="Settings">⚙︎</button>
+          </div>
+          <div class="search">
+            <input id="global-search-input" type="text" placeholder="Discover movies, shows, people" />
+            <button id="global-search-btn" class="icon-btn search-btn">⌕</button>
+          </div>
+          <section class="section" id="search-results-section" style="display:none;">
+            <div class="section-head">
+              <h3>Search Results</h3>
+              <button class="text-btn" id="clear-search-btn">Clear</button>
+            </div>
+            <div class="carousel" id="search-results"></div>
+          </section>
+          <div class="chips">
+            <button class="chip" data-genre="Science Fiction">Sci‑Fi</button>
+            <button class="chip" data-genre="Drama">Drama</button>
+            <button class="chip" data-genre="Animation">Animation</button>
+            <button class="chip" data-genre="Thriller">Thriller</button>
+          </div>
+        </header>
+
+        <section class="section">
+          <div class="section-head">
+            <h3>Trending Movies</h3>
+            <button class="text-btn" data-see-all="home-trending-movies">See all</button>
+          </div>
+          <div class="carousel" id="home-trending-movies">
+            <article class="card" data-open="movie-detail">
+              <div class="poster"></div>
+              <div class="card-title">Neon Drift</div>
+              <div class="card-meta">8.1 • 2h 11m</div>
+            </article>
+            <article class="card" data-open="movie-detail">
+              <div class="poster alt"></div>
+              <div class="card-title">Glass Harbor</div>
+              <div class="card-meta">7.6 • 1h 49m</div>
+            </article>
+            <article class="card" data-open="movie-detail">
+              <div class="poster alt2"></div>
+              <div class="card-title">Kite City</div>
+              <div class="card-meta">8.4 • 2h 22m</div>
+            </article>
+          </div>
+        </section>
+
+        <section class="section">
+          <div class="section-head">
+            <h3>Trending Series</h3>
+            <button class="text-btn" data-see-all="home-trending-series">See all</button>
+          </div>
+          <div class="carousel" id="home-trending-series">
+            <article class="card" data-open="series-detail">
+              <div class="poster series"></div>
+              <div class="card-title">Orbit Line</div>
+              <div class="card-meta">Season 3 • 9.0</div>
+            </article>
+            <article class="card" data-open="series-detail">
+              <div class="poster series alt"></div>
+              <div class="card-title">Paper District</div>
+              <div class="card-meta">Season 2 • 8.3</div>
+            </article>
+            <article class="card" data-open="series-detail">
+              <div class="poster series alt2"></div>
+              <div class="card-title">Zero Hour</div>
+              <div class="card-meta">Season 1 • 8.7</div>
+            </article>
+          </div>
+        </section>
+
+      </section>
+
+      <section id="movies" class="screen">
+        <header class="page-head">
+          <h2>Movies</h2>
+          <div class="view-toggle">
+            <button class="pill active" data-view-toggle="movies" data-mode="grid">Grid</button>
+            <button class="pill" data-view-toggle="movies" data-mode="list">List</button>
+          </div>
+        </header>
+
+        <section class="section">
+          <div class="section-head">
+            <h3>Watched</h3>
+            <button class="text-btn">Sort</button>
+          </div>
+          <div class="list" id="movies-watched-list"></div>
+        </section>
+
+        <section class="section">
+          <div class="section-head">
+            <h3>Watchlist</h3>
+            <button class="text-btn">Edit</button>
+          </div>
+          <div class="carousel" id="movies-watchlist"></div>
+        </section>
+
+        <section class="section">
+          <div class="section-head">
+            <h3>Trending Movies</h3>
+            <button class="text-btn" data-see-all="movies-trending">See all</button>
+          </div>
+          <div class="carousel" id="movies-trending">
+            <article class="card" data-open="movie-detail">
+              <div class="poster alt2"></div>
+              <div class="card-title">Kite City</div>
+              <div class="card-meta">8.4 • 2h 22m</div>
+            </article>
+            <article class="card" data-open="movie-detail">
+              <div class="poster"></div>
+              <div class="card-title">Neon Drift</div>
+              <div class="card-meta">8.1 • 2h 11m</div>
+            </article>
+          </div>
+        </section>
+
+        <section class="section">
+          <div class="section-head">
+            <h3>In Theatres</h3>
+            <button class="text-btn" data-see-all="movies-theatres">See all</button>
+          </div>
+          <div class="carousel" id="movies-theatres">
+            <article class="card" data-open="movie-detail">
+              <div class="poster alt"></div>
+              <div class="card-title">Glass Harbor</div>
+              <div class="card-meta">Now playing</div>
+            </article>
+            <article class="card" data-open="movie-detail">
+              <div class="poster alt2"></div>
+              <div class="card-title">Kite City</div>
+              <div class="card-meta">Now playing</div>
+            </article>
+          </div>
+        </section>
+
+        <section class="section">
+          <div class="section-head">
+            <h3>Upcoming</h3>
+            <button class="text-btn" data-see-all="movies-upcoming">See list</button>
+          </div>
+          <div class="carousel" id="movies-upcoming">
+            <article class="card" data-open="movie-detail">
+              <div class="poster"></div>
+              <div class="card-title">Loading...</div>
+              <div class="card-meta">Please wait</div>
+            </article>
+          </div>
+        </section>
+      </section>
+
+      <section id="series" class="screen">
+        <header class="page-head">
+          <h2>Series</h2>
+          <div class="view-toggle">
+            <button class="pill active" data-view-toggle="series" data-mode="grid">Grid</button>
+            <button class="pill" data-view-toggle="series" data-mode="list">List</button>
+          </div>
+        </header>
+
+        <section class="section">
+          <div class="section-head">
+            <h3>Watched</h3>
+            <div class="head-right">
+              <div class="next-up" id="next-up-label">Next up: S3 E1</div>
+              <button class="text-btn sort-btn" data-open="sort-menu">Sort</button>
+            </div>
+          </div>
+          <div class="list" id="series-watched-list"></div>
+        </section>
+
+        <section class="section">
+          <div class="section-head">
+            <h3>Watchlist</h3>
+            <button class="text-btn">Edit</button>
+          </div>
+          <div class="carousel" id="series-watchlist"></div>
+        </section>
+
+        <section class="section">
+          <div class="section-head">
+            <h3>Trending Shows</h3>
+            <button class="text-btn" data-see-all="series-trending">See all</button>
+          </div>
+          <div class="carousel" id="series-trending">
+            <article class="card" data-open="series-detail">
+              <div class="poster series alt2"></div>
+              <div class="card-title">Zero Hour</div>
+              <div class="card-meta">Season 1 • 8.7</div>
+            </article>
+            <article class="card" data-open="series-detail">
+              <div class="poster series"></div>
+              <div class="card-title">Orbit Line</div>
+              <div class="card-meta">Season 3 • 9.0</div>
+            </article>
+          </div>
+        </section>
+
+        <section class="section">
+          <div class="section-head">
+            <h3>Top Shows (IMDb)</h3>
+            <button class="text-btn" data-see-all="series-top">See all</button>
+          </div>
+          <div class="carousel" id="series-top">
+            <article class="card" data-open="series-detail">
+              <div class="poster series alt"></div>
+              <div class="card-title">Paper District</div>
+              <div class="card-meta">Rank #4</div>
+            </article>
+            <article class="card" data-open="series-detail">
+              <div class="poster series alt2"></div>
+              <div class="card-title">Zero Hour</div>
+              <div class="card-meta">Rank #6</div>
+            </article>
+          </div>
+        </section>
+
+        <section class="section">
+          <div class="section-head">
+            <h3>On The Air</h3>
+            <button class="text-btn">Latest</button>
+          </div>
+          <div class="carousel" id="series-on-air">
+            <article class="card" data-open="series-detail">
+              <div class="poster series"></div>
+              <div class="card-title">Loading...</div>
+              <div class="card-meta">Please wait</div>
+            </article>
+          </div>
+        </section>
+      </section>
+
+      <section id="catalog-screen" class="screen" data-hide-tabs="true">
+        <header class="page-head">
+          <h2 id="catalog-title">Catalog</h2>
+          <button class="icon-btn" data-open="home">⌂</button>
+        </header>
+        <section class="section">
+          <div class="poster-grid" id="catalog-grid"></div>
+          <div class="catalog-loading" id="catalog-loading">Scroll for more</div>
+        </section>
+      </section>
+
+      <section id="movie-detail" class="screen detail" data-hide-tabs="true">
+        <div class="hero-poster"></div>
+        <div class="detail-content">
+          <div class="detail-head">
+            <div>
+              <h2 id="movie-detail-title">Neon Drift</h2>
+              <div class="detail-meta" id="movie-detail-meta">Sci‑Fi • 2h 11m • 2026</div>
+            </div>
+            <button class="icon-btn close" data-close>✕</button>
+          </div>
+          <p class="overview" id="movie-detail-overview">
+            A neon-lit courier discovers a citywide conspiracy after a mysterious package changes every route.
+          </p>
+          <div class="action-row">
+            <button class="btn outline" id="movie-watchlist-btn">Watchlist</button>
+            <button class="btn solid" id="movie-watched-btn">Watched</button>
+          </div>
+          <div class="action-row">
+            <button class="btn outline" id="movie-trailers-btn">Trailers</button>
+          </div>
+          <div class="chips" id="movie-detail-providers">
+            <button class="chip">Prime</button>
+            <button class="chip">Apple TV</button>
+            <button class="chip">Rent $3.99</button>
+          </div>
+          <div class="chips" id="movie-detail-sources">
+            <button class="chip">IMDb</button>
+            <button class="chip">TMDB</button>
+          </div>
+          <div class="section">
+            <div class="section-head">
+              <h3>Cast & Crew</h3>
+              <button class="text-btn" data-open="cast-sheet">Full list</button>
+            </div>
+            <div class="carousel mini" id="movie-detail-cast">
+              <div class="cast">
+                <div class="avatar"></div>
+                <div class="cast-name">J. Vale</div>
+              </div>
+              <div class="cast">
+                <div class="avatar alt"></div>
+                <div class="cast-name">M. Cori</div>
+              </div>
+              <div class="cast">
+                <div class="avatar alt2"></div>
+                <div class="cast-name">A. Reyes</div>
+              </div>
+              <div class="cast">
+                <div class="avatar alt3"></div>
+                <div class="cast-name">S. Hale</div>
+              </div>
+            </div>
+          </div>
+          <div class="section">
+            <div class="section-head">
+              <h3>Recommended</h3>
+            </div>
+            <div class="carousel" id="movie-recommendations"></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="series-detail" class="screen detail" data-hide-tabs="true">
+        <div class="hero-poster series"></div>
+        <div class="detail-content">
+          <div class="detail-head">
+            <div>
+              <h2 id="series-detail-title">Orbit Line</h2>
+              <div class="detail-meta" id="series-detail-meta">Drama • 3 seasons • 9.0</div>
+            </div>
+            <button class="icon-btn close" data-close>✕</button>
+          </div>
+          <p class="overview" id="series-detail-overview">
+            A space station’s crew balances personal rivalries with a political crisis orbiting Earth.
+          </p>
+          <div class="chips" id="series-detail-networks">
+            <button class="chip">HBO</button>
+            <button class="chip">Max</button>
+            <button class="chip">4K</button>
+          </div>
+          <div class="chips" id="series-detail-sources">
+            <button class="chip">IMDb</button>
+            <button class="chip">TMDB</button>
+          </div>
+          <div class="action-row">
+            <button class="btn outline" data-open="cast-sheet">Cast & Crew</button>
+            <button class="btn solid" id="series-watchlist-btn">Watchlist</button>
+          </div>
+          <div class="action-row">
+            <button class="btn outline" id="series-watched-btn">Add to Watched</button>
+            <button class="btn outline" id="series-trailers-btn">Trailers</button>
+          </div>
+
+          <div class="section">
+            <div class="section-head">
+              <h3>Seasons</h3>
+              <div class="head-right">
+                <div class="pill" id="current-season-pill">Season 1</div>
+                <button class="text-btn all-btn" data-toggle="all-watched">Mark all watched</button>
+              </div>
+            </div>
+            <div class="season-slider" id="season-slider">
+              <button class="season active" data-season-tab="1">S1</button>
+            </div>
+            <div class="episodes" id="episodes-list"></div>
+          </div>
+          <div class="section">
+            <div class="section-head">
+              <h3>Recommended</h3>
+            </div>
+            <div class="carousel" id="series-recommendations"></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="lists" class="screen">
+        <header class="page-head">
+          <h2>Lists</h2>
+          <button class="btn solid" id="new-list-btn">+ Add</button>
+        </header>
+        <section class="section">
+          <div class="list" id="user-lists"></div>
+        </section>
+      </section>
+
+      <section id="list-detail" class="screen" data-hide-tabs="true">
+        <header class="page-head">
+          <h2>List</h2>
+          <button class="btn solid" id="save-list-btn">Save</button>
+        </header>
+        <section class="section">
+          <label for="list-name-input">List Name</label>
+          <input id="list-name-input" class="list-input" type="text" placeholder="My list name" />
+        </section>
+        <section class="section">
+          <div class="search">
+            <input id="list-search-input" type="text" placeholder="Search movie or series" />
+            <button id="list-search-btn" class="icon-btn search-btn">⌕</button>
+          </div>
+          <div class="carousel" id="list-search-results"></div>
+        </section>
+        <section class="section">
+          <div class="section-head">
+            <h3>Titles In List</h3>
+            <button class="text-btn" data-open="lists">Back</button>
+          </div>
+          <div class="list" id="list-items"></div>
+        </section>
+      </section>
+
+      <section id="settings" class="screen" data-hide-tabs="true">
+        <header class="page-head">
+          <h2>Settings</h2>
+          <button class="icon-btn home-btn" data-open="home">⌂</button>
+        </header>
+
+        <section class="section">
+          <div class="section-head">
+            <h3>Account</h3>
+            <button class="text-btn" data-toggle="account-state">Demo Login</button>
+          </div>
+          <div class="card form active" data-account="logged-out" id="login-form">
+            <label for="login-email">Email</label>
+            <input id="login-email" type="email" placeholder="you@email.com" />
+            <label for="login-password">Password</label>
+            <input id="login-password" type="password" placeholder="••••••••" />
+            <button class="btn solid full" id="login-btn">Log in</button>
+            <div class="hint" id="login-message"></div>
+            <div class="muted-line">
+              Create a account
+              <button class="link-btn" data-open="create-account">Create account</button>
+            </div>
+          </div>
+          <div class="card account" data-account="logged-in" id="account-panel">
+            <div class="account-row">
+              <div class="avatar small"></div>
+              <div>
+                <div class="item-title" id="account-name">Ruthvik</div>
+                <div class="item-sub" id="account-email">ruthvik@email.com</div>
+              </div>
+            </div>
+            <button class="btn outline full" id="reset-btn">Reset password</button>
+            <button class="btn ghost full" id="logout-btn">Log out</button>
+          </div>
+        </section>
+
+        <section class="section">
+          <div class="section-head">
+            <h3>Appearance</h3>
+          </div>
+          <div class="card options">
+            <div class="option-bubble"></div>
+            <button class="pill active">Dark</button>
+            <button class="pill">Light</button>
+            <button class="pill">System</button>
+            <button class="pill">Cinema Glow</button>
+          </div>
+        </section>
+
+        <section class="section">
+          <div class="section-head">
+            <h3>Notifications</h3>
+          </div>
+          <div class="card list">
+            <div class="list-item compact">
+              <div>
+                <div class="item-title">New episode alerts</div>
+                <div class="item-sub">Notify when a show releases</div>
+              </div>
+              <button class="toggle on">On</button>
+            </div>
+            <div class="list-item compact">
+              <div>
+                <div class="item-title">Movie releases</div>
+                <div class="item-sub">Theatrical and streaming drops</div>
+              </div>
+              <button class="toggle">Off</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="section">
+          <div class="section-head">
+            <h3>Privacy & Security</h3>
+          </div>
+          <div class="card list">
+            <div class="list-item compact">
+              <div>
+                <div class="item-title">Private profile</div>
+                <div class="item-sub">Hide your watch history</div>
+              </div>
+              <button class="toggle">Off</button>
+            </div>
+            <div class="list-item compact">
+              <div>
+                <div class="item-title">Two‑factor auth</div>
+                <div class="item-sub">Extra security for login</div>
+              </div>
+              <button class="toggle on">On</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="section">
+          <div class="section-head">
+            <h3>Data & Storage</h3>
+          </div>
+          <div class="card list">
+            <div class="list-item compact">
+              <div>
+                <div class="item-title">Export data</div>
+                <div class="item-sub">CSV or JSON</div>
+              </div>
+              <button class="pill">Export</button>
+            </div>
+            <div class="list-item compact">
+              <div>
+                <div class="item-title">Import data</div>
+                <div class="item-sub">From another app</div>
+              </div>
+              <button class="pill">Import</button>
+            </div>
+            <div class="list-item compact">
+              <div>
+                <div class="item-title">Cloud sync</div>
+                <div class="item-sub">Google Drive, iCloud, Dropbox</div>
+              </div>
+              <button class="pill">Connect</button>
+            </div>
+            <div class="list-item compact">
+              <div>
+                <div class="item-title">Local folder</div>
+                <div class="item-sub" id="folder-status">Not selected</div>
+              </div>
+              <button class="pill" id="select-folder-btn">Choose</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="section">
+          <div class="section-head">
+            <h3>Help & Support</h3>
+          </div>
+          <div class="card list">
+            <div class="list-item compact">
+              <div class="item-title">FAQ</div>
+              <div class="item-sub">Common questions</div>
+            </div>
+            <div class="list-item compact">
+              <div class="item-title">Contact us</div>
+              <div class="item-sub">support@plot.app</div>
+            </div>
+          </div>
+        </section>
+
+        <section class="section">
+          <div class="section-head">
+            <h3>About</h3>
+          </div>
+          <div class="card list">
+            <div class="list-item compact">
+              <div class="item-title">App version</div>
+              <div class="item-sub">PLOT 1.0.0</div>
+            </div>
+          </div>
+        </section>
+      </section>
+
+      <section id="create-account" class="screen" data-hide-tabs="true">
+        <header class="page-head">
+          <h2>Create Account</h2>
+          <button class="icon-btn" data-open="settings">←</button>
+        </header>
+        <section class="section">
+          <div class="card form" id="create-form">
+            <label for="create-name">Name</label>
+            <input id="create-name" type="text" placeholder="Your name" />
+            <label for="create-email">Email</label>
+            <input id="create-email" type="email" placeholder="you@email.com" />
+            <label for="create-password">Password</label>
+            <input id="create-password" type="password" placeholder="••••••••" />
+            <label for="create-repeat">Repeat Password</label>
+            <input id="create-repeat" type="password" placeholder="••••••••" />
+            <div class="hint" id="create-message">Passwords must match.</div>
+            <button class="btn solid full" id="create-btn">Create account</button>
+          </div>
+        </section>
+      </section>
+
+      <section id="trailers-screen" class="screen" data-hide-tabs="true">
+        <header class="page-head">
+          <h2 id="trailers-title">Trailers</h2>
+          <button class="icon-btn" data-close>✕</button>
+        </header>
+        <section class="section">
+          <div class="list" id="trailers-list"></div>
+        </section>
+      </section>
+    </main>
+
+    <nav class="tabbar">
+      <div class="tab-bubble"></div>
+      <button class="tab active" data-open="home">Home</button>
+      <button class="tab" data-open="movies">Movies</button>
+      <button class="tab" data-open="series">Series</button>
+      <button class="tab" data-open="lists">Lists</button>
+    </nav>
+    <div id="cast-sheet" class="sheet">
+      <div class="sheet-handle"></div>
+      <div class="sheet-head">
+        <h3 id="cast-sheet-title">Cast & Crew</h3>
+        <button class="icon-btn close" data-close>✕</button>
+      </div>
+      <div class="cast-slider" id="cast-sheet-list">
+        <div class="cast large">
+          <div class="avatar"></div>
+          <div class="cast-name">No cast loaded</div>
+        </div>
+      </div>
+    </div>
+
+    <div id="episode-sheet" class="sheet">
+      <div class="sheet-handle"></div>
+      <div class="sheet-head">
+        <h3 id="episode-sheet-title">Episode Details</h3>
+        <button class="icon-btn close" data-close>✕</button>
+      </div>
+      <div class="detail-meta" id="episode-sheet-meta">-</div>
+      <p class="overview" id="episode-sheet-overview">
+        Select an episode to see details.
+      </p>
+      <div class="chips" id="episode-sheet-providers">
+        <button class="chip">Not available</button>
+      </div>
+    </div>
+
+    <div id="sort-menu" class="menu">
+      <button class="menu-item" data-sort="custom">Custom arrange</button>
+      <button class="menu-item" data-sort="new">Newly added</button>
+      <button class="menu-item" data-sort="old">Oldest first</button>
+      <button class="menu-item" data-sort="watched">Watched to top</button>
+    </div>
+
+    <div id="overlay" class="overlay"></div>
+  </div>
+
+  <script src="plot.config.js"></script>
+  <script src="data-layer.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

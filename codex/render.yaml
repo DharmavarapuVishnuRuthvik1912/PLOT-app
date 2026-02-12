@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: plot-app
+    runtime: python
+    rootDir: phone-ui
+    buildCommand: ""
+    startCommand: python3 server.py
+    envVars:
+      - key: HOST
+        value: 0.0.0.0
+      - key: TMDB_READ_TOKEN
+        sync: false
