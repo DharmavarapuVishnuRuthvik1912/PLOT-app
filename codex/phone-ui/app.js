@@ -9,6 +9,7 @@ const tabBubble = document.querySelector('.tab-bubble');
 const optionBubble = document.querySelector('.option-bubble');
 
 const loginForm = document.getElementById('login-form');
+const plotLogoImg = document.getElementById('plot-logo-img');
 const loginEmail = document.getElementById('login-email');
 const loginPassword = document.getElementById('login-password');
 const loginBtn = document.getElementById('login-btn');
@@ -28,18 +29,22 @@ const createRepeat = document.getElementById('create-repeat');
 const createBtn = document.getElementById('create-btn');
 const createMessage = document.getElementById('create-message');
 
-const watchedList = document.getElementById('series-watched-list');
+const watchedList = document.getElementById('series-watching-list');
+const watchedDoneList = document.getElementById('series-watched-list');
 const nextUpLabel = document.getElementById('next-up-label');
 const allBtn = document.querySelector('[data-toggle="all-watched"]');
 const globalSearchInput = document.getElementById('global-search-input');
 const globalSearchBtn = document.getElementById('global-search-btn');
 const clearSearchBtn = document.getElementById('clear-search-btn');
 const searchResultsSection = document.getElementById('search-results-section');
+const homeGenreChips = document.getElementById('home-genre-chips');
 const movieWatchlistBtn = document.getElementById('movie-watchlist-btn');
 const movieWatchedBtn = document.getElementById('movie-watched-btn');
+const movieAddListBtn = document.getElementById('movie-add-list-btn');
 const movieTrailersBtn = document.getElementById('movie-trailers-btn');
 const seriesWatchlistBtn = document.getElementById('series-watchlist-btn');
 const seriesWatchedBtn = document.getElementById('series-watched-btn');
+const seriesAddListBtn = document.getElementById('series-add-list-btn');
 const seriesTrailersBtn = document.getElementById('series-trailers-btn');
 const movieRecommendations = document.getElementById('movie-recommendations');
 const seriesRecommendations = document.getElementById('series-recommendations');
@@ -53,6 +58,19 @@ const catalogTitle = document.getElementById('catalog-title');
 const catalogGrid = document.getElementById('catalog-grid');
 const catalogLoading = document.getElementById('catalog-loading');
 const catalogScreen = document.getElementById('catalog-screen');
+const catalogLoadMoreBtn = document.getElementById('catalog-load-more-btn');
+const catalogBackBtn = document.getElementById('catalog-back-btn');
+const addToListTitle = document.getElementById('add-to-list-title');
+const addToListOptions = document.getElementById('add-to-list-options');
+const addToListMessage = document.getElementById('add-to-list-message');
+const quickListNameInput = document.getElementById('quick-list-name-input');
+const quickCreateListBtn = document.getElementById('quick-create-list-btn');
+const quickContextMenu = document.getElementById('quick-context-menu');
+const quickTitleActionsTitle = document.getElementById('quick-title-actions-title');
+const quickTitleActionsMessage = document.getElementById('quick-title-actions-message');
+const quickActionWatchlistBtn = document.getElementById('quick-action-watchlist');
+const quickActionWatchedBtn = document.getElementById('quick-action-watched');
+const quickActionAddListBtn = document.getElementById('quick-action-add-list');
 const trailersTitle = document.getElementById('trailers-title');
 const trailersList = document.getElementById('trailers-list');
 const newListBtn = document.getElementById('new-list-btn');
@@ -64,6 +82,7 @@ const listSearchBtn = document.getElementById('list-search-btn');
 const listSearchResults = document.getElementById('list-search-results');
 const listItems = document.getElementById('list-items');
 const selectFolderBtn = document.getElementById('select-folder-btn');
+const folderPickerInput = document.getElementById('folder-picker-input');
 const folderStatus = document.getElementById('folder-status');
 let searchDebounce = null;
 let currentScreenId = 'home';
@@ -89,7 +108,6 @@ const sectionData = {
   'movies-theatres': [],
   'movies-upcoming': [],
   'series-trending': [],
-  'series-top': [],
   'series-on-air': []
 };
 const knownMedia = {
@@ -108,6 +126,7 @@ const catalogState = {
   mode: 'section',
   sectionId: '',
   genre: '',
+  mediaFilter: 'all',
   page: 1,
   loading: false,
   hasMore: true,
@@ -117,9 +136,78 @@ const listEditor = {
   activeListId: null,
   draftItems: []
 };
+let listItemsViewMode = 'list';
+let addToListTarget = null;
+let quickActionTarget = null;
+let longPressTimer = null;
+let suppressNextClick = false;
+let longPressStartX = 0;
+let longPressStartY = 0;
+let quickActionAnchorEl = null;
+const CATALOG_BATCH_SIZE = 12;
+const HOME_GENRES = [
+  'Science Fiction',
+  'Drama',
+  'Animation',
+  'Thriller',
+  'Action',
+  'Comedy',
+  'Crime',
+  'Mystery',
+  'Fantasy',
+  'Romance',
+  'Horror',
+  'Adventure',
+  'Family',
+  'Documentary',
+  'History',
+  'War',
+  'Music'
+];
+let genresExpanded = false;
+const GENRE_IDS = {
+  movie: {
+    action: 28,
+    adventure: 12,
+    animation: 16,
+    comedy: 35,
+    crime: 80,
+    documentary: 99,
+    drama: 18,
+    family: 10751,
+    fantasy: 14,
+    history: 36,
+    horror: 27,
+    music: 10402,
+    mystery: 9648,
+    romance: 10749,
+    'science fiction': 878,
+    thriller: 53,
+    war: 10752,
+    western: 37
+  },
+  tv: {
+    action: 10759,
+    adventure: 10759,
+    animation: 16,
+    comedy: 35,
+    crime: 80,
+    documentary: 99,
+    drama: 18,
+    family: 10751,
+    kids: 10762,
+    mystery: 9648,
+    news: 10763,
+    reality: 10764,
+    'science fiction': 10765,
+    fantasy: 10765,
+    war: 10768,
+    western: 37
+  }
+};
 
 const state = loadState();
-let customOrder = Array.from(document.querySelectorAll('#series-watched-list .list-item')).map((item) => {
+let customOrder = Array.from(document.querySelectorAll('#series-watching-list .list-item')).map((item) => {
   return item.querySelector('.item-title')?.textContent.trim() || '';
 });
 
@@ -210,14 +298,24 @@ function setSectionData(id, items) {
 
 function renderCatalogCards(items, append = false) {
   if (!catalogGrid) return;
-  const html = items.length
-    ? items.map(createCardHtml).join('')
+  const source = Array.isArray(items) ? items : [];
+  const filtered = catalogState.mediaFilter === 'all'
+    ? source
+    : source.filter((item) => item && item.mediaType === catalogState.mediaFilter);
+  const html = filtered.length
+    ? filtered.map(createCardHtml).join('')
     : '<article class="card"><div class="poster"></div><div class="card-title">No items</div><div class="card-meta">Try again later</div></article>';
   if (!append) {
     catalogGrid.innerHTML = html;
-  } else if (items.length) {
-    catalogGrid.insertAdjacentHTML('beforeend', items.map(createCardHtml).join(''));
+  } else if (filtered.length) {
+    catalogGrid.insertAdjacentHTML('beforeend', filtered.map(createCardHtml).join(''));
   }
+}
+
+function refreshCatalogLoadMoreVisibility() {
+  if (!catalogLoadMoreBtn) return;
+  const show = catalogState.mode === 'genre' && catalogState.hasMore;
+  catalogLoadMoreBtn.style.display = show ? 'inline-flex' : 'none';
 }
 
 function dedupeCatalogItems(items) {
@@ -230,6 +328,28 @@ function dedupeCatalogItems(items) {
   });
 }
 
+function matchesGenreItem(item, genreName) {
+  if (!item) return false;
+  const name = String(genreName || '').trim().toLowerCase();
+  if (!name) return false;
+  const genreNames = Array.isArray(item.genres) ? item.genres.map((g) => String(g).toLowerCase()) : [];
+  if (genreNames.some((g) => g === name || g.includes(name) || name.includes(g))) return true;
+  const ids = Array.isArray(item.genreIds) ? item.genreIds.map((id) => Number(id)).filter(Number.isFinite) : [];
+  if (!ids.length) return false;
+  const key = item.mediaType === 'tv' ? 'tv' : 'movie';
+  const wanted = GENRE_IDS[key][name];
+  return Number.isFinite(wanted) ? ids.includes(wanted) : false;
+}
+
+function localGenreSeed(genreName) {
+  const pool = [];
+  Object.values(sectionData).forEach((rows) => {
+    (rows || []).forEach((item) => pool.push(item));
+  });
+  const matches = pool.filter((item) => matchesGenreItem(item, genreName));
+  return dedupeCatalogItems(matches).slice(0, CATALOG_BATCH_SIZE);
+}
+
 async function loadMoreCatalog() {
   if (!window.PlotData || catalogState.loading || !catalogState.hasMore) return;
   if (currentScreenId !== 'catalog-screen') return;
@@ -238,32 +358,55 @@ async function loadMoreCatalog() {
   try {
     const existing = new Set(catalogState.items.map((item) => `${item.mediaType}:${item.id}`));
     let loadedAny = false;
-    for (let tries = 0; tries < 3; tries += 1) {
+    const maxTries = catalogState.mode === 'genre' ? 2 : 1;
+    for (let tries = 0; tries < maxTries; tries += 1) {
       const nextPage = catalogState.page + 1;
       const rows = catalogState.mode === 'genre'
         ? await window.PlotData.fetchByGenre(catalogState.genre, nextPage)
         : await window.PlotData.fetchSectionPage(catalogState.sectionId, nextPage);
       catalogState.page = nextPage;
       if (!rows.length) continue;
-      const newItems = rows.filter((item) => !existing.has(`${item.mediaType}:${item.id}`));
+      const batch = rows.slice(0, CATALOG_BATCH_SIZE);
+      const newItems = batch.filter((item) => !existing.has(`${item.mediaType}:${item.id}`));
       newItems.forEach((item) => existing.add(`${item.mediaType}:${item.id}`));
-      if (!newItems.length) continue;
+      if (!newItems.length) {
+        if (catalogState.mode === 'genre' && batch.length) {
+          renderCatalogCards(batch, true);
+          loadedAny = true;
+          break;
+        }
+        continue;
+      }
       catalogState.items = dedupeCatalogItems(catalogState.items.concat(newItems));
       renderCatalogCards(newItems, true);
       loadedAny = true;
       break;
     }
     if (!loadedAny) {
+      if (catalogState.mode === 'genre') {
+        if (catalogLoading) catalogLoading.textContent = 'Loading more suggestions...';
+        refreshCatalogLoadMoreVisibility();
+        return;
+      }
       catalogState.hasMore = false;
       if (catalogLoading) catalogLoading.textContent = 'No more titles';
+      refreshCatalogLoadMoreVisibility();
       return;
     }
     if (catalogLoading) catalogLoading.textContent = 'Scroll for more';
+    refreshCatalogLoadMoreVisibility();
   } catch {
     catalogState.hasMore = false;
     if (catalogLoading) catalogLoading.textContent = 'Could not load more';
+    refreshCatalogLoadMoreVisibility();
   } finally {
     catalogState.loading = false;
+    if (catalogState.mode === 'genre' && catalogScreen && currentScreenId === 'catalog-screen') {
+      const nearBottom = catalogScreen.scrollTop + catalogScreen.clientHeight >= catalogScreen.scrollHeight - 900;
+      if (nearBottom && catalogState.hasMore) {
+        setTimeout(() => { loadMoreCatalog(); }, 30);
+      }
+    }
   }
 }
 
@@ -286,26 +429,37 @@ async function openCatalogForSection(sectionId) {
     'movies-theatres': 'In Theatres',
     'movies-upcoming': 'Upcoming Movies',
     'series-trending': 'Trending Shows',
-    'series-top': 'Top Shows',
     'series-on-air': 'On The Air'
   };
   catalogTitle.textContent = titles[sectionId] || 'Catalog';
   catalogState.mode = 'section';
   catalogState.sectionId = sectionId;
   catalogState.genre = '';
+  catalogState.mediaFilter = 'all';
   catalogState.page = 1;
   catalogState.hasMore = true;
   catalogState.items = [];
+  updateCatalogFilterUI();
+  refreshCatalogLoadMoreVisibility();
+  const screen = document.getElementById('catalog-screen');
+  if (screen) screen.classList.remove('genre-heading-shift');
   if (catalogLoading) catalogLoading.textContent = 'Loading...';
   try {
     const rows = window.PlotData ? await window.PlotData.fetchSectionPage(sectionId, 1) : [];
-    catalogState.items = dedupeCatalogItems(rows.length ? rows : (sectionData[sectionId] || []));
+    const seedRows = rows.length ? rows.slice(0, CATALOG_BATCH_SIZE) : (sectionData[sectionId] || []).slice(0, CATALOG_BATCH_SIZE);
+    catalogState.items = dedupeCatalogItems(seedRows);
   } catch {
-    catalogState.items = dedupeCatalogItems(sectionData[sectionId] || []);
+    catalogState.items = dedupeCatalogItems((sectionData[sectionId] || []).slice(0, CATALOG_BATCH_SIZE));
   }
   renderCatalogCards(catalogState.items, false);
   if (catalogLoading) catalogLoading.textContent = catalogState.items.length ? 'Scroll for more' : 'No items';
-  await ensureCatalogFilled();
+  ensureCatalogFilled();
+  if (catalogState.mode === 'genre' && catalogState.items.length < 24) {
+    setTimeout(() => {
+      loadMoreCatalog();
+      setTimeout(() => loadMoreCatalog(), 250);
+    }, 50);
+  }
 }
 
 async function openCatalogForGenre(genreName) {
@@ -314,21 +468,56 @@ async function openCatalogForGenre(genreName) {
   catalogState.mode = 'genre';
   catalogState.sectionId = '';
   catalogState.genre = genreName;
+  catalogState.mediaFilter = 'all';
   catalogState.page = 1;
   catalogState.hasMore = true;
   catalogState.items = [];
-  renderCatalogCards([], false);
-  if (catalogLoading) catalogLoading.textContent = 'Loading...';
+  updateCatalogFilterUI();
+  refreshCatalogLoadMoreVisibility();
+  catalogGrid.innerHTML = '';
+  const seed = localGenreSeed(genreName);
+  if (seed.length) {
+    catalogState.items = seed.slice();
+    renderCatalogCards(seed, false);
+    if (catalogLoading) catalogLoading.textContent = 'Refreshing...';
+  } else if (catalogLoading) {
+    catalogLoading.textContent = 'Loading...';
+  }
   try {
     const rows = await window.PlotData.fetchByGenre(genreName, 1);
-    catalogState.items = dedupeCatalogItems(rows);
-    catalogState.hasMore = rows.length > 0;
-    renderCatalogCards(catalogState.items, false);
-    if (catalogLoading) catalogLoading.textContent = rows.length ? 'Scroll for more' : 'No results';
+    const fresh = dedupeCatalogItems((rows || []).slice(0, CATALOG_BATCH_SIZE));
+    if (fresh.length) {
+      catalogState.items = fresh;
+      catalogState.hasMore = true;
+      renderCatalogCards(fresh, false);
+      if (catalogLoading) catalogLoading.textContent = 'Scroll for more';
+      refreshCatalogLoadMoreVisibility();
+    } else if (seed.length) {
+      catalogState.hasMore = true;
+      if (catalogLoading) catalogLoading.textContent = 'Scroll for more';
+      refreshCatalogLoadMoreVisibility();
+    } else {
+      catalogState.hasMore = true;
+      if (catalogLoading) catalogLoading.textContent = 'No results yet — tap Load more';
+      refreshCatalogLoadMoreVisibility();
+    }
   } catch {
-    if (catalogLoading) catalogLoading.textContent = 'Could not load genre';
+    if (!seed.length) {
+      catalogState.hasMore = true;
+      if (catalogLoading) catalogLoading.textContent = 'Could not load now — tap Load more';
+      refreshCatalogLoadMoreVisibility();
+    } else if (catalogLoading) {
+      catalogLoading.textContent = 'Scroll for more';
+      refreshCatalogLoadMoreVisibility();
+    }
   }
-  await ensureCatalogFilled();
+  ensureCatalogFilled();
+
+  const screen = document.getElementById('catalog-screen');
+  if (screen) {
+    screen.classList.remove('genre-heading-shift');
+    requestAnimationFrame(() => screen.classList.add('genre-heading-shift'));
+  }
 }
 
 function fillChips(containerId, values) {
@@ -338,6 +527,29 @@ function fillChips(containerId, values) {
   el.innerHTML = chips.length
     ? chips.map((value) => `<button class=\"chip\">${escapeHtml(value)}</button>`).join('')
     : '<button class=\"chip\">Not available</button>';
+}
+
+function genreLabel(name) {
+  return name === 'Science Fiction' ? 'Sci‑Fi' : name;
+}
+
+function renderHomeGenres() {
+  if (!homeGenreChips) return;
+  const visible = genresExpanded ? HOME_GENRES : HOME_GENRES.slice(0, 6);
+  const html = visible
+    .map((name) => `<button class="chip" data-genre="${escapeHtml(name)}">${escapeHtml(genreLabel(name))}</button>`)
+    .join('');
+  const toggle = `<button class="chip" data-action="toggle-genres">${genresExpanded ? 'Less' : 'More'}</button>`;
+  homeGenreChips.innerHTML = html + toggle;
+}
+
+function updateCatalogFilterUI() {
+  const row = document.getElementById('catalog-filter-row');
+  if (!row) return;
+  row.style.display = catalogState.mode === 'genre' ? 'flex' : 'none';
+  row.querySelectorAll('[data-catalog-filter]').forEach((btn) => {
+    btn.classList.toggle('active', btn.dataset.catalogFilter === catalogState.mediaFilter);
+  });
 }
 
 function fillCast(containerId, names) {
@@ -445,24 +657,348 @@ function openListEditor(listId) {
   if (listNameInput) listNameInput.value = list.name || 'My List';
   if (listSearchInput) listSearchInput.value = '';
   if (listSearchResults) listSearchResults.innerHTML = '';
+  document.querySelectorAll('[data-list-items-view]').forEach((btn) => {
+    btn.classList.toggle('active', btn.dataset.listItemsView === listItemsViewMode);
+  });
   renderListEditorItems();
 }
 
 function renderListEditorItems() {
   if (!listItems) return;
+  listItems.classList.toggle('grid-mode', listItemsViewMode === 'grid');
   if (!listEditor.draftItems.length) {
     listItems.innerHTML = '<div class="list-item"><div><div class="item-title">No titles yet</div><div class="item-sub">Search and add titles</div></div></div>';
     return;
   }
   listItems.innerHTML = listEditor.draftItems.map((item) => {
     const style = item.posterPath ? ` style=\"background-image:url('${escapeHtml(item.posterPath)}');background-size:cover;background-position:center;\"` : '';
-    return `<div class="list-item"><div class="thumb"${style}></div><div><div class="item-title">${escapeHtml(item.title)}</div><div class="item-sub">${item.mediaType === 'movie' ? 'Movie' : 'Series'}</div></div><button class="movie-action" data-remove-list-item="${escapeHtml(item.mediaType)}:${escapeHtml(item.id)}">Remove</button></div>`;
+    const open = item.mediaType === 'movie' ? 'movie-detail' : 'series-detail';
+    const watchedMovie = item.mediaType === 'movie' && !!findStoredItem(state.myMoviesWatched, item.id);
+    const watchedSeries = item.mediaType === 'tv' && !!findStoredItem(state.mySeriesWatched, item.id);
+    const watchedBadge = (watchedMovie || watchedSeries) ? '<span class="watched-dot">✓</span>' : '';
+    return `<div class="list-item" data-open="${open}" data-media-type="${escapeHtml(item.mediaType)}" data-media-id="${escapeHtml(item.id)}"><div class="thumb-wrap"><div class="thumb"${style}></div>${watchedBadge}</div><div><div class="item-title">${escapeHtml(item.title)}</div><div class="item-sub">${item.mediaType === 'movie' ? 'Movie' : 'Series'}</div></div><button class="movie-action" data-remove-list-item="${escapeHtml(item.mediaType)}:${escapeHtml(item.id)}">Remove</button></div>`;
   }).join('');
 }
 
 function renderFolderStatus() {
   if (!folderStatus) return;
   folderStatus.textContent = state.localFolderName ? `Selected: ${state.localFolderName}` : 'Not selected';
+}
+
+function setupBrandLogo() {
+  if (!plotLogoImg) return;
+  const fallbackSvg = plotLogoImg.nextElementSibling;
+  const sources = [
+    'assets/plot-logo.PNG',
+    'assets/plot-logo.png',
+    'assets/plot-logo.jpg',
+    'assets/plot-logo.jpeg',
+    'assets/plot-logo.webp',
+    'assets/plot-logo.svg'
+  ];
+  let idx = 0;
+  const tryNext = () => {
+    if (idx >= sources.length) {
+      plotLogoImg.style.display = 'none';
+      if (fallbackSvg) fallbackSvg.style.display = 'block';
+      return;
+    }
+    const src = sources[idx];
+    idx += 1;
+    plotLogoImg.src = src;
+  };
+  plotLogoImg.onerror = () => tryNext();
+  plotLogoImg.onload = () => {
+    plotLogoImg.style.display = 'block';
+    if (fallbackSvg) fallbackSvg.style.display = 'none';
+  };
+  tryNext();
+}
+
+function renderAddToListSheet(item) {
+  if (!addToListOptions) return;
+  const title = item && item.title ? item.title : 'Title';
+  if (addToListTitle) addToListTitle.textContent = `Add "${title}" To List`;
+  if (addToListMessage) addToListMessage.textContent = '';
+  if (quickListNameInput) quickListNameInput.value = '';
+
+  const lists = Array.isArray(state.customLists) ? state.customLists : [];
+  if (!lists.length) {
+    addToListOptions.innerHTML = '<div class="list-item"><div><div class="item-title">No lists yet</div><div class="item-sub">Create one above to add this title now</div></div></div>';
+    return;
+  }
+
+  addToListOptions.innerHTML = lists.map((list) => {
+    const count = Array.isArray(list.items) ? list.items.length : 0;
+    const top3 = Array.isArray(list.items) ? list.items.slice(0, 3) : [];
+    const stack = top3.length
+      ? top3.map((row) => {
+        const style = row.posterPath ? ` style="background-image:url('${escapeHtml(row.posterPath)}')"` : '';
+        return `<div class="stack-poster"${style}></div>`;
+      }).join('')
+      : '<div class="stack-poster"></div>';
+    return `<button class="list-item add-to-list-item" data-add-to-list-id="${escapeHtml(list.id)}"><div class="poster-stack">${stack}</div><div><div class="item-title">${escapeHtml(list.name || 'My List')}</div><div class="item-sub">${count} title${count === 1 ? '' : 's'}</div></div></button>`;
+  }).join('');
+}
+
+function setAddToListMessage(text, error = false) {
+  if (!addToListMessage) return;
+  addToListMessage.textContent = text || '';
+  addToListMessage.style.color = error ? '#ff8f8f' : '';
+}
+
+function addCurrentTargetToList(list) {
+  if (!list || !addToListTarget) return { ok: false, reason: 'No title selected.' };
+  list.items = Array.isArray(list.items) ? list.items : [];
+  const exists = list.items.some((row) => String(row.id) === String(addToListTarget.id) && row.mediaType === addToListTarget.mediaType);
+  if (exists) return { ok: false, reason: `Already in "${list.name}".` };
+  list.items.unshift(addToListTarget);
+  saveState();
+  renderListsHome();
+  if (listEditor.activeListId && String(listEditor.activeListId) === String(list.id)) {
+    listEditor.draftItems = list.items.slice();
+    renderListEditorItems();
+  }
+  return { ok: true, reason: `Added to "${list.name}".` };
+}
+
+function createListFromQuickInput() {
+  if (!quickListNameInput) {
+    setAddToListMessage('Input not available.', true);
+    return;
+  }
+  const name = String(quickListNameInput.value || '').trim();
+  if (!name) {
+    setAddToListMessage('Enter a list name.', true);
+    return;
+  }
+  const existing = (state.customLists || []).find((row) => String(row.name || '').trim().toLowerCase() === name.toLowerCase());
+  if (existing) {
+    const result = addCurrentTargetToList(existing);
+    setAddToListMessage(result.reason, !result.ok);
+    renderAddToListSheet(addToListTarget);
+    return;
+  }
+
+  const newList = {
+    id: `list-${Date.now()}`,
+    name,
+    items: []
+  };
+  state.customLists = Array.isArray(state.customLists) ? state.customLists : [];
+  state.customLists.unshift(newList);
+  const result = addCurrentTargetToList(newList);
+  renderAddToListSheet(addToListTarget);
+  setAddToListMessage(result.reason, !result.ok);
+}
+
+async function openAddToList(mediaType) {
+  let item = null;
+  try {
+    if (mediaType === 'movie') item = await getSelectedMovie();
+    if (mediaType === 'tv') item = await getSelectedSeries();
+  } catch {}
+  if (!item) return;
+  addToListTarget = simplifyItem(item);
+  renderAddToListSheet(item);
+  openSheet('add-to-list-sheet');
+}
+
+function setQuickActionMessage(text, error = false) {
+  if (!quickTitleActionsMessage) return;
+  quickTitleActionsMessage.textContent = text || '';
+  quickTitleActionsMessage.style.color = error ? '#ff8f8f' : '';
+}
+
+function clearQuickActionHighlight() {
+  if (quickActionAnchorEl && quickActionAnchorEl.classList) {
+    quickActionAnchorEl.classList.remove('longpress-active');
+  }
+  quickActionAnchorEl = null;
+}
+
+function closeQuickContextMenu() {
+  if (quickContextMenu) quickContextMenu.classList.remove('active');
+  clearQuickActionHighlight();
+}
+
+function positionQuickContextMenu(anchorEl) {
+  if (!quickContextMenu || !anchorEl) return;
+  const rect = anchorEl.getBoundingClientRect();
+  const pad = 10;
+  quickContextMenu.style.left = '-9999px';
+  quickContextMenu.style.top = '-9999px';
+  quickContextMenu.classList.add('active');
+  const menuRect = quickContextMenu.getBoundingClientRect();
+  let left = rect.left + (rect.width / 2) - (menuRect.width / 2);
+  left = Math.max(pad, Math.min(window.innerWidth - menuRect.width - pad, left));
+  let top = rect.bottom + 10;
+  let placement = 'bottom';
+  if ((top + menuRect.height) > (window.innerHeight - pad)) {
+    top = rect.top - menuRect.height - 10;
+    placement = 'top';
+  }
+  if (top < pad) top = pad;
+  quickContextMenu.style.left = `${Math.round(left)}px`;
+  quickContextMenu.style.top = `${Math.round(top)}px`;
+  quickContextMenu.dataset.placement = placement;
+  const arrowX = Math.max(16, Math.min(menuRect.width - 16, (rect.left + rect.width / 2) - left));
+  quickContextMenu.style.setProperty('--arrow-x', `${Math.round(arrowX)}px`);
+}
+
+async function getMediaItemById(mediaType, mediaId) {
+  let item = findMediaItem(mediaType, mediaId);
+  if (item) return item;
+  if (!window.PlotData) return null;
+  try {
+    if (mediaType === 'movie') return await window.PlotData.fetchMovieDetail(mediaId);
+    if (mediaType === 'tv') return await window.PlotData.fetchTVDetail(mediaId);
+  } catch {}
+  return null;
+}
+
+async function addItemToWatchlist(item) {
+  if (!item) return { ok: false, reason: 'Title not found.' };
+  if (item.mediaType === 'movie') {
+    const existing = findStoredItem(state.myMoviesWatchlist, item.id);
+    if (existing) return { ok: false, reason: 'Already in watchlist.' };
+    const row = simplifyItem(item);
+    row.added = new Date().toISOString().slice(0, 10);
+    state.myMoviesWatchlist.unshift(row);
+    saveState();
+    renderMyLists();
+    return { ok: true, reason: 'Added to movie watchlist.' };
+  }
+  if (item.mediaType === 'tv') {
+    const existing = findStoredItem(state.mySeriesWatchlist, item.id);
+    if (existing) return { ok: false, reason: 'Already in watchlist.' };
+    const row = simplifyItem(item);
+    row.added = new Date().toISOString().slice(0, 10);
+    state.mySeriesWatchlist.unshift(row);
+    saveState();
+    renderMyLists();
+    return { ok: true, reason: 'Added to series watchlist.' };
+  }
+  return { ok: false, reason: 'Unsupported type.' };
+}
+
+async function addItemToWatched(item) {
+  if (!item) return { ok: false, reason: 'Title not found.' };
+  if (item.mediaType === 'movie') {
+    const existing = findStoredItem(state.myMoviesWatched, item.id);
+    if (existing) {
+      existing.count = (Number(existing.count) || 1) + 1;
+    } else {
+      const row = simplifyItem(item);
+      row.count = 1;
+      row.added = new Date().toISOString().slice(0, 10);
+      state.myMoviesWatched.unshift(row);
+    }
+    saveState();
+    renderMyLists();
+    return { ok: true, reason: 'Added to watched movies.' };
+  }
+
+  if (item.mediaType === 'tv') {
+    const show = item.seasonDetails ? item : await getMediaItemById('tv', item.id);
+    if (!show) return { ok: false, reason: 'Series details not available.' };
+    const watchedScan = await markAiredEpisodesAsWatched(show);
+    const totalEpisodes = Math.max(0, Number(watchedScan.airedCount) || 0);
+    const existing = findStoredItem(state.mySeriesWatched, show.id);
+    const nextSeason = Math.max(1, Number(watchedScan.nextSeason) || 1);
+    const nextEpisode = Math.max(1, Number(watchedScan.nextEpisode) || 1);
+    if (existing) {
+      existing.count = totalEpisodes;
+      existing.totalEpisodes = totalEpisodes;
+      existing.left = 0;
+      existing.nextSeason = nextSeason;
+      existing.nextEpisode = nextEpisode;
+      existing.inProduction = Boolean(show.inProduction);
+      existing.status = show.status || '';
+      existing.nextAirDate = show.nextAirDate || '';
+    } else {
+      const row = simplifyItem(show);
+      row.count = totalEpisodes;
+      row.totalEpisodes = totalEpisodes;
+      row.left = 0;
+      row.nextSeason = nextSeason;
+      row.nextEpisode = nextEpisode;
+      row.nextAirDate = show.nextAirDate || '';
+      row.added = new Date().toISOString().slice(0, 10);
+      state.mySeriesWatched.unshift(row);
+    }
+    saveState();
+    renderMyLists();
+    sortWatchedList(state.sortMode);
+    return { ok: true, reason: 'Added to watched series.' };
+  }
+  return { ok: false, reason: 'Unsupported type.' };
+}
+
+function openQuickTitleActionsSheet(item) {
+  if (!item || !quickActionAnchorEl) return;
+  quickActionTarget = simplifyItem(item);
+  if (quickTitleActionsTitle) {
+    quickTitleActionsTitle.textContent = item.title ? `"${item.title}"` : 'Title Actions';
+  }
+  setQuickActionMessage('');
+  positionQuickContextMenu(quickActionAnchorEl);
+}
+
+function setupLongPressActions() {
+  const clearPress = () => {
+    if (longPressTimer) {
+      clearTimeout(longPressTimer);
+      longPressTimer = null;
+    }
+  };
+
+  document.addEventListener('pointerdown', (event) => {
+    const targetEl = asElement(event.target);
+    if (!targetEl) return;
+    if (targetEl.closest('button,input,textarea,select,a,[data-episode],[data-undo],[data-close],[data-next-inc],[data-next-dec],[data-movie-inc],[data-movie-dec],[data-remove-list],[data-delete-list],[data-movie-remove],[data-series-remove]')) return;
+    const holder = targetEl.closest('[data-media-id][data-media-type]');
+    if (!holder) return;
+    const mediaId = String(holder.dataset.mediaId || '').trim();
+    const mediaType = String(holder.dataset.mediaType || '').trim();
+    if (!mediaId || (mediaType !== 'movie' && mediaType !== 'tv')) return;
+    longPressStartX = Number(event.clientX) || 0;
+    longPressStartY = Number(event.clientY) || 0;
+    clearPress();
+    longPressTimer = setTimeout(async () => {
+      suppressNextClick = true;
+      const item = await getMediaItemById(mediaType, mediaId);
+      if (item) {
+        clearQuickActionHighlight();
+        quickActionAnchorEl = holder;
+        if (quickActionAnchorEl.classList) quickActionAnchorEl.classList.add('longpress-active');
+        openQuickTitleActionsSheet(item);
+      }
+    }, 420);
+  });
+
+  document.addEventListener('pointerup', clearPress);
+  document.addEventListener('pointercancel', clearPress);
+  document.addEventListener('pointermove', (event) => {
+    const dx = Math.abs((Number(event.clientX) || 0) - longPressStartX);
+    const dy = Math.abs((Number(event.clientY) || 0) - longPressStartY);
+    if (dx > 12 || dy > 12) clearPress();
+  });
+  window.addEventListener('resize', () => {
+    closeQuickContextMenu();
+    clearPress();
+  });
+  document.addEventListener('scroll', () => {
+    closeQuickContextMenu();
+    clearPress();
+  }, true);
+}
+
+function setLocalFolder(name, uri = '') {
+  state.localFolderName = name || 'Selected folder';
+  state.localFolderUri = uri || '';
+  saveState();
+  renderFolderStatus();
 }
 
 
@@ -557,7 +1093,7 @@ function renderMovieDetail(movie) {
   if (movieWatchedBtn) movieWatchedBtn.textContent = 'Watched';
 }
 
-function renderSeriesDetail(show) {
+function renderSeriesDetail(show, options = {}) {
   if (!show) return;
   registerKnownItem(show);
   selectedMedia.tv = show.id;
@@ -587,8 +1123,23 @@ function renderSeriesDetail(show) {
     const exists = Boolean(findStoredItem(state.mySeriesWatchlist, show.id));
     seriesWatchlistBtn.textContent = exists ? 'Added' : 'Watchlist';
   }
+  const tracked = findStoredItem(state.mySeriesWatched, show.id);
+  if (tracked) {
+    const totalEpisodes = totalEpisodesForShow(show);
+    tracked.totalEpisodes = totalEpisodes;
+    tracked.left = Math.max(0, totalEpisodes - (Number(tracked.count) || 0));
+    tracked.inProduction = Boolean(show.inProduction);
+    tracked.status = show.status || '';
+    tracked.nextAirDate = show.nextAirDate || '';
+    saveState();
+  }
   if (seriesWatchedBtn) seriesWatchedBtn.textContent = 'Add to Watched';
-  initializeSeriesSeasons(show);
+  const trackedSeason = tracked && (Number(tracked.left) || 0) > 0 ? Number(tracked.nextSeason) || 1 : 1;
+  const requestedSeason = Number(options.preferredSeason);
+  const preferredSeason = (Number.isFinite(requestedSeason) && requestedSeason > 0)
+    ? requestedSeason
+    : (trackedSeason || 1);
+  initializeSeriesSeasons(show, preferredSeason);
 }
 
 function buildSeriesSeasons(show) {
@@ -609,6 +1160,13 @@ function buildSeriesSeasons(show) {
 
 function episodeKey(seriesId, seasonNumber, episodeNumber) {
   return `SER:${seriesId}:S${seasonNumber}E${episodeNumber}`;
+}
+
+function clearSeriesEpisodeCounts(seriesId) {
+  const prefix = `SER:${seriesId}:S`;
+  Object.keys(state.episodeCounts || {}).forEach((key) => {
+    if (key.startsWith(prefix)) delete state.episodeCounts[key];
+  });
 }
 
 function renderEpisodesForActiveSeason() {
@@ -660,11 +1218,15 @@ function renderSeasonTabs() {
     .join('');
 }
 
-function initializeSeriesSeasons(show) {
+function initializeSeriesSeasons(show, preferredSeason = 1) {
   seriesView.id = String(show.id);
   seriesView.title = show.title;
   seriesView.seasons = buildSeriesSeasons(show);
-  seriesView.activeSeason = 1;
+  const available = seriesView.seasons.map((row) => Number(row.season)).filter((x) => Number.isFinite(x) && x > 0);
+  const minSeason = available.length ? Math.min(...available) : 1;
+  const maxSeason = available.length ? Math.max(...available) : 1;
+  const target = Number.isFinite(Number(preferredSeason)) ? Number(preferredSeason) : 1;
+  seriesView.activeSeason = Math.max(minSeason, Math.min(maxSeason, Math.floor(target)));
   renderSeasonTabs();
   renderEpisodesForActiveSeason();
 }
@@ -699,6 +1261,9 @@ function updateSeriesWatchedFromEpisodes() {
     existing.totalEpisodes = totalEpisodes;
     existing.nextSeason = progress.nextSeason;
     existing.nextEpisode = progress.nextEpisode;
+    existing.inProduction = Boolean(selectedDetail.tv.inProduction);
+    existing.status = selectedDetail.tv.status || '';
+    existing.nextAirDate = selectedDetail.tv.nextAirDate || '';
   } else {
     const row = simplifyItem(selectedDetail.tv);
     row.count = progress.watchedCount;
@@ -725,8 +1290,183 @@ function simplifyItem(item) {
     runtime: item.runtime || null,
     seasons: item.seasons || null,
     year: item.year || null,
-    count: item.count || 1
+    count: item.count || 1,
+    inProduction: Boolean(item.inProduction),
+    status: item.status || '',
+    nextAirDate: item.nextAirDate || '',
+    seasonDetails: Array.isArray(item.seasonDetails)
+      ? item.seasonDetails
+        .map((s) => ({
+          season: Number(s.season) || Number(s.season_number) || 0,
+          episodeCount: Number(s.episodeCount) || Number(s.episode_count) || 0
+        }))
+        .filter((s) => s.season > 0)
+      : []
   };
+}
+
+async function markAiredEpisodesAsWatched(show) {
+  if (!show || !window.PlotData) {
+    return { airedCount: 0, nextSeason: 1, nextEpisode: 1 };
+  }
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const seasons = buildSeriesSeasons(show);
+  let airedCount = 0;
+  let nextSeason = 1;
+  let nextEpisode = 1;
+  let nextFound = false;
+
+  for (const seasonRow of seasons) {
+    const seasonNum = Number(seasonRow.season) || 0;
+    if (!seasonNum) continue;
+    let episodes = [];
+    try {
+      episodes = await window.PlotData.fetchTVSeasonEpisodes(String(show.id), seasonNum);
+    } catch {
+      continue;
+    }
+    for (const ep of episodes || []) {
+      const epNum = Number(ep.index) || 0;
+      if (!epNum) continue;
+      const airRaw = String(ep.airDate || '').trim();
+      const airDate = airRaw ? new Date(airRaw) : null;
+      const isAired = !airDate || !Number.isNaN(airDate.getTime()) && airDate <= today;
+      if (isAired) {
+        const key = episodeKey(show.id, seasonNum, epNum);
+        state.episodeCounts[key] = Math.max(1, Number(state.episodeCounts[key]) || 0);
+        airedCount += 1;
+      } else if (!nextFound) {
+        nextSeason = seasonNum;
+        nextEpisode = epNum;
+        nextFound = true;
+      }
+    }
+  }
+
+  if (!nextFound && seasons.length) {
+    const last = seasons[seasons.length - 1];
+    nextSeason = Number(last.season) || 1;
+    nextEpisode = Math.max(1, Number(last.episodeCount) + 1 || 1);
+  }
+
+  return { airedCount, nextSeason, nextEpisode };
+}
+
+async function ensureSeriesSeasonBounds(row) {
+  if (!row) return row;
+  const current = Array.isArray(row.seasonDetails) ? row.seasonDetails : [];
+  if (current.some((s) => Number(s.episodeCount) > 0)) return row;
+  if (!window.PlotData) return row;
+  try {
+    const show = await window.PlotData.fetchTVDetail(String(row.id));
+    if (!show) return row;
+    row.seasonDetails = Array.isArray(show.seasonDetails)
+      ? show.seasonDetails.map((s) => ({
+          season: Number(s.season) || 0,
+          episodeCount: Number(s.episodeCount) || 0
+        })).filter((s) => s.season > 0)
+      : [];
+    row.seasons = Number(show.seasons) || row.seasons || 1;
+    row.nextAirDate = show.nextAirDate || row.nextAirDate || '';
+  } catch {}
+  return row;
+}
+
+function buildSeasonCapMap(row) {
+  const map = new Map();
+  const seasonDetails = Array.isArray(row?.seasonDetails) ? row.seasonDetails : [];
+  seasonDetails.forEach((s) => {
+    const season = Number(s.season);
+    const cap = Number(s.episodeCount);
+    if (season > 0 && cap > 0) map.set(season, cap);
+  });
+  if (!map.size) {
+    const seasons = Math.max(1, Number(row?.seasons) || 1);
+    for (let s = 1; s <= seasons; s += 1) map.set(s, 24);
+  }
+  return map;
+}
+
+function seriesProgressLabel(row) {
+  const caps = buildSeasonCapMap(row);
+  const seasons = Array.from(caps.keys()).sort((a, b) => a - b);
+  const minSeason = seasons[0] || 1;
+  const nextSeason = Math.max(minSeason, Number(row?.nextSeason) || minSeason);
+  const nextEpisode = Math.max(1, Number(row?.nextEpisode) || 1);
+
+  // Tile should show last marked episode, not the next pointer.
+  if (nextEpisode > 1) {
+    return `S${nextSeason} E${nextEpisode - 1}`;
+  }
+
+  const prevSeason = nextSeason - 1;
+  if (prevSeason >= minSeason) {
+    const prevCap = Math.max(1, Number(caps.get(prevSeason)) || 1);
+    return `S${prevSeason} E${prevCap}`;
+  }
+
+  return `S${nextSeason} E1`;
+}
+
+function isBeforePointer(season, episode, nextSeason, nextEpisode) {
+  if (season < nextSeason) return true;
+  if (season > nextSeason) return false;
+  return episode < nextEpisode;
+}
+
+function stepSeriesPointer(row, dir) {
+  const caps = buildSeasonCapMap(row);
+  const seasons = Array.from(caps.keys()).sort((a, b) => a - b);
+  const minSeason = seasons[0] || 1;
+  const maxSeason = seasons[seasons.length - 1] || minSeason;
+  let season = Math.max(minSeason, Number(row.nextSeason) || minSeason);
+  let episode = Math.max(1, Number(row.nextEpisode) || 1);
+  const cap = Math.max(1, Number(caps.get(season)) || 1);
+  const doneEpisode = (season === maxSeason) ? (Math.max(1, Number(caps.get(maxSeason)) || 1) + 1) : cap + 1;
+
+  if (dir > 0) {
+    if (season === maxSeason && episode >= doneEpisode) {
+      return { nextSeason: season, nextEpisode: doneEpisode };
+    }
+    if (episode < cap) return { nextSeason: season, nextEpisode: episode + 1 };
+    if (episode === cap) {
+      if (season < maxSeason) return { nextSeason: season + 1, nextEpisode: 1 };
+      return { nextSeason: season, nextEpisode: cap + 1 };
+    }
+    return { nextSeason: season, nextEpisode: episode };
+  }
+
+  if (season === minSeason && episode <= 1) return { nextSeason: minSeason, nextEpisode: 1 };
+  if (episode > 1) return { nextSeason: season, nextEpisode: episode - 1 };
+  const prevSeason = Math.max(minSeason, season - 1);
+  const prevCap = Math.max(1, Number(caps.get(prevSeason)) || 1);
+  return { nextSeason: prevSeason, nextEpisode: prevCap };
+}
+
+function syncSeriesProgressFromPointer(row) {
+  if (!row) return;
+  const caps = buildSeasonCapMap(row);
+  const seasons = Array.from(caps.keys()).sort((a, b) => a - b);
+  let watched = 0;
+  let total = 0;
+  seasons.forEach((season) => {
+    const cap = Math.max(1, Number(caps.get(season)) || 1);
+    for (let ep = 1; ep <= cap; ep += 1) {
+      total += 1;
+      const key = episodeKey(row.id, season, ep);
+      const before = isBeforePointer(season, ep, Number(row.nextSeason) || 1, Number(row.nextEpisode) || 1);
+      if (before) {
+        if ((Number(state.episodeCounts[key]) || 0) < 1) state.episodeCounts[key] = 1;
+        watched += 1;
+      } else {
+        state.episodeCounts[key] = 0;
+      }
+    }
+  });
+  row.count = watched;
+  row.totalEpisodes = total;
+  row.left = Math.max(0, total - watched);
 }
 
 function findStoredItem(list, id) {
@@ -735,6 +1475,8 @@ function findStoredItem(list, id) {
 }
 
 function renderMyLists() {
+  state.mySeriesWatched = (state.mySeriesWatched || []).filter((item) => (Number(item && item.count) || 0) > 0);
+
   if (moviesWatchlistCarousel) {
     if (state.myMoviesWatchlist.length) {
       state.myMoviesWatchlist.forEach(registerKnownItem);
@@ -749,10 +1491,17 @@ function renderMyLists() {
   if (moviesWatchedList) {
     if (state.myMoviesWatched.length) {
       state.myMoviesWatched.forEach(registerKnownItem);
+      const isListMode = state.moviesViewMode === 'list';
       moviesWatchedList.innerHTML = state.myMoviesWatched
         .map((item) => {
           const style = item.posterPath ? ` style=\"background-image:url('${escapeHtml(item.posterPath)}');background-size:cover;background-position:center;\"` : '';
-          return `<div class=\"list-item\" data-open=\"movie-detail\" data-media-type=\"movie\" data-media-id=\"${item.id}\"><div class=\"thumb\"${style}></div><div><div class=\"item-title\">${escapeHtml(item.title)}</div><div class=\"item-sub\">Times watched: ${item.count}X</div></div><div class=\"ep-watch\"><button class=\"movie-action\" data-movie-dec=\"${item.id}\">Undo</button><div class=\"count\">${item.count}X</div><button class=\"circle\" data-movie-inc=\"${item.id}\">+</button><button class=\"movie-action\" data-movie-remove=\"${item.id}\">Remove</button></div></div>`;
+          const ratingNum = Number(item.rating);
+          const rating = Number.isFinite(ratingNum) && ratingNum > 0 ? ratingNum.toFixed(1) : 'NR';
+          const count = Math.max(1, Number(item.count) || 1);
+          if (isListMode) {
+            return `<div class=\"list-item movie-watched-item\" data-open=\"movie-detail\" data-media-type=\"movie\" data-media-id=\"${item.id}\"><div class=\"thumb-wrap\"><div class=\"thumb\"${style}></div><button class=\"remove-btn\" data-movie-remove=\"${item.id}\">×</button></div><div><div class=\"item-title\">${escapeHtml(item.title)}</div><div class=\"item-sub\">TMDB ${escapeHtml(rating)}</div></div><div class=\"next-stepper movie-watch-stepper\"><button class=\"step-btn\" data-movie-dec=\"${item.id}\">‹</button><div class=\"step-label\">${count}X</div><button class=\"step-btn\" data-movie-inc=\"${item.id}\">›</button></div></div>`;
+          }
+          return `<div class=\"movie-watched-card\" data-open=\"movie-detail\" data-media-type=\"movie\" data-media-id=\"${item.id}\"><div class=\"thumb-wrap\"><div class=\"thumb\"${style}></div><button class=\"remove-btn\" data-movie-remove=\"${item.id}\">×</button></div><div class=\"item-title\">${escapeHtml(item.title)}</div><div class=\"item-sub\">TMDB ${escapeHtml(rating)}</div><div class=\"next-stepper movie-watch-stepper\"><button class=\"step-btn\" data-movie-dec=\"${item.id}\">‹</button><div class=\"step-label\">${count}X</div><button class=\"step-btn\" data-movie-inc=\"${item.id}\">›</button></div></div>`;
         })
         .join('');
     } else {
@@ -771,20 +1520,52 @@ function renderMyLists() {
     }
   }
 
+  const seriesAll = Array.isArray(state.mySeriesWatched) ? state.mySeriesWatched.slice() : [];
+  seriesAll.forEach(registerKnownItem);
+  const watchingRows = seriesAll.filter((item) => (Number(item.left) || 0) > 0);
+  const doneRows = seriesAll.filter((item) => (Number(item.left) || 0) <= 0);
+
   if (watchedList) {
-    if (state.mySeriesWatched.length) {
-      state.mySeriesWatched.forEach(registerKnownItem);
-      watchedList.innerHTML = state.mySeriesWatched
+    if (watchingRows.length) {
+      const isSeriesListMode = state.seriesViewMode === 'list';
+      watchedList.innerHTML = watchingRows
         .map((item) => {
           const style = item.posterPath ? ` style=\"background-image:url('${escapeHtml(item.posterPath)}');background-size:cover;background-position:center;\"` : '';
           const left = Number(item.left);
           const fallbackLeft = Number(item.totalEpisodes) > 0 ? Math.max(0, Number(item.totalEpisodes) - (Number(item.count) || 0)) : 0;
           const leftLabel = Number.isFinite(left) && left >= 0 ? left : fallbackLeft;
-          return `<div class=\"list-item\" data-open=\"series-detail\" data-media-type=\"tv\" data-media-id=\"${item.id}\" data-added=\"${item.added || new Date().toISOString().slice(0, 10)}\" data-progress=\"${item.count || 1}\" data-next-season=\"${item.nextSeason || 1}\" data-next-episode=\"${item.nextEpisode || 1}\"><div class=\"thumb series\"${style}></div><div><div class=\"item-title\">${escapeHtml(item.title)}</div><div class=\"item-sub\">${leftLabel} episode${leftLabel === 1 ? '' : 's'} left to watch</div></div><div class=\"count\">S${item.nextSeason || 1} E${item.nextEpisode || 1}</div></div>`;
+          const stepLabel = seriesProgressLabel(item);
+          if (isSeriesListMode) {
+            return `<div class=\"list-item\" data-open=\"series-detail\" data-media-type=\"tv\" data-media-id=\"${item.id}\" data-added=\"${item.added || new Date().toISOString().slice(0, 10)}\" data-progress=\"${item.count || 1}\" data-next-season=\"${item.nextSeason || 1}\" data-next-episode=\"${item.nextEpisode || 1}\"><div class=\"thumb series\"${style}></div><div><div class=\"item-title\">${escapeHtml(item.title)}</div><div class=\"item-sub\">${leftLabel} Episode${leftLabel === 1 ? '' : 's'} left</div></div><div class=\"next-stepper\"><button class=\"step-btn\" data-next-dec=\"${item.id}\">‹</button><div class=\"step-label\">${escapeHtml(stepLabel)}</div><button class=\"step-btn\" data-next-inc=\"${item.id}\">›</button></div></div>`;
+          }
+          return `<div class=\"series-watching-card\" data-open=\"series-detail\" data-media-type=\"tv\" data-media-id=\"${item.id}\" data-added=\"${item.added || new Date().toISOString().slice(0, 10)}\" data-progress=\"${item.count || 1}\" data-next-season=\"${item.nextSeason || 1}\" data-next-episode=\"${item.nextEpisode || 1}\"><div class=\"thumb-wrap\"><div class=\"thumb series\"${style}></div><button class=\"remove-btn\" data-series-remove=\"${item.id}\">×</button></div><div class=\"item-title\">${escapeHtml(item.title)}</div><div class=\"item-sub\">${leftLabel} Episode${leftLabel === 1 ? '' : 's'} left</div><div class=\"next-stepper\"><button class=\"step-btn\" data-next-dec=\"${item.id}\">‹</button><div class=\"step-label\">${escapeHtml(stepLabel)}</div><button class=\"step-btn\" data-next-inc=\"${item.id}\">›</button></div></div>`;
         })
         .join('');
     } else {
-      watchedList.innerHTML = '<div class="list-item"><div><div class="item-title">No watched series</div><div class="item-sub">Track episodes or tap Add to Watched</div></div></div>';
+      watchedList.innerHTML = '<div class="list-item"><div><div class="item-title">No watching series</div><div class="item-sub">Add from details or episode tracking</div></div></div>';
+    }
+  }
+
+  if (watchedDoneList) {
+    if (doneRows.length) {
+      watchedDoneList.innerHTML = doneRows
+        .map((item) => {
+          const style = item.posterPath ? ` style=\"background-image:url('${escapeHtml(item.posterPath)}');background-size:cover;background-position:center;\"` : '';
+          const nextAir = String(item.nextAirDate || '').trim();
+          let note = 'All episodes watched';
+          if (nextAir) {
+            const now = new Date();
+            const air = new Date(nextAir);
+            const sixty = 1000 * 60 * 60 * 24 * 60;
+            if (!Number.isNaN(air.getTime()) && air > now && (air.getTime() - now.getTime()) <= sixty) {
+              note += ` • Next in ${Math.max(1, Math.ceil((air.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)))}d`;
+            }
+          }
+          return `<div class=\"list-item\" data-open=\"series-detail\" data-media-type=\"tv\" data-media-id=\"${item.id}\"><div class=\"thumb series\"${style}></div><div><div class=\"item-title\">${escapeHtml(item.title)}</div><div class=\"item-sub\">${escapeHtml(note)}</div></div><div class=\"count\">Done</div></div>`;
+        })
+        .join('');
+    } else {
+      watchedDoneList.innerHTML = '<div class="list-item"><div><div class="item-title">No completed series</div><div class="item-sub">Completed shows appear here</div></div></div>';
     }
   }
 }
@@ -813,69 +1594,87 @@ async function searchAndRender(query) {
 
 async function loadDynamicContent() {
   if (!window.PlotData) return;
+  const msg = 'TMDB unavailable. Add token and restart server.';
+  let firstMovieDone = false;
+  let firstSeriesDone = false;
   try {
-    const [homeMovies, homeSeries, nowPlaying, upcomingMovies, topSeries, onAir] = await Promise.all([
+    const [homeMovies, homeSeries] = await Promise.all([
       window.PlotData.fetchTrendingMovies(),
-      window.PlotData.fetchTrendingTV(),
-      window.PlotData.fetchNowPlayingMovies(),
-      window.PlotData.fetchUpcomingMovies(),
-      window.PlotData.fetchTopTV(),
-      window.PlotData.fetchOnTheAirTV()
+      window.PlotData.fetchTrendingTV()
     ]);
-
-    const homeMoviesView = rotate(homeMovies, 0).slice(0, 8);
-    const homeSeriesView = rotate(homeSeries, 0).slice(0, 8);
-    const moviesTrendingView = rotate(homeMovies, 2).slice(0, 8);
-    const theatresView = rotate(nowPlaying, 0).slice(0, 8);
-    const upcomingView = rotate(upcomingMovies, 0).slice(0, 8);
-    const seriesTrendingView = rotate(homeSeries, 1).slice(0, 8);
-    const topView = rotate(topSeries, 0).slice(0, 8);
-    const onAirView = rotate(onAir, 0).slice(0, 8);
-
     setSectionData('home-trending-movies', homeMovies);
     setSectionData('home-trending-series', homeSeries);
     setSectionData('movies-trending', homeMovies);
-    setSectionData('movies-theatres', nowPlaying);
-    setSectionData('movies-upcoming', upcomingMovies);
     setSectionData('series-trending', homeSeries);
-    setSectionData('series-top', topSeries);
-    setSectionData('series-on-air', onAir);
-
-    fillCarousel('home-trending-movies', homeMoviesView);
-    fillCarousel('home-trending-series', homeSeriesView);
-    fillCarousel('movies-trending', moviesTrendingView);
-    fillCarousel('movies-theatres', theatresView);
-    fillCarousel('movies-upcoming', upcomingView);
-    fillCarousel('series-trending', seriesTrendingView);
-    fillCarousel('series-top', topView);
-    fillCarousel('series-on-air', onAirView);
-
-    if (homeMovies[0]) renderMovieDetail(homeMovies[0]);
-    if (homeSeries[0]) renderSeriesDetail(homeSeries[0]);
+    fillCarousel('home-trending-movies', rotate(homeMovies, 0).slice(0, 8));
+    fillCarousel('home-trending-series', rotate(homeSeries, 0).slice(0, 8));
+    fillCarousel('movies-trending', rotate(homeMovies, 2).slice(0, 8));
+    fillCarousel('series-trending', rotate(homeSeries, 1).slice(0, 8));
+    if (!firstMovieDone && homeMovies[0]) {
+      renderMovieDetail(homeMovies[0]);
+      firstMovieDone = true;
+    }
+    if (!firstSeriesDone && homeSeries[0]) {
+      renderSeriesDetail(homeSeries[0]);
+      firstSeriesDone = true;
+    }
   } catch (error) {
-    console.warn('Failed to load dynamic data:', error);
-    const msg = 'TMDB unavailable. Add token and restart server.';
-    [
-      'home-trending-movies',
-      'home-trending-series',
-      'movies-trending',
-      'movies-theatres',
-      'movies-upcoming',
-      'series-trending',
-      'series-top',
-      'series-on-air'
-    ].forEach((id) => fillErrorCard(id, msg));
+    console.warn('Core home load failed:', error);
+    fillErrorCard('home-trending-movies', msg);
+    fillErrorCard('home-trending-series', msg);
+    fillErrorCard('movies-trending', msg);
+    fillErrorCard('series-trending', msg);
   }
+
+  const secondaryTasks = [
+    {
+      fetcher: () => window.PlotData.fetchNowPlayingMovies(),
+      onOk: (rows) => {
+        setSectionData('movies-theatres', rows);
+        fillCarousel('movies-theatres', rotate(rows, 0).slice(0, 8));
+      },
+      onFail: () => fillErrorCard('movies-theatres', msg)
+    },
+    {
+      fetcher: () => window.PlotData.fetchUpcomingMovies(),
+      onOk: (rows) => {
+        setSectionData('movies-upcoming', rows);
+        fillCarousel('movies-upcoming', rotate(rows, 0).slice(0, 8));
+      },
+      onFail: () => fillErrorCard('movies-upcoming', msg)
+    },
+    {
+      fetcher: () => window.PlotData.fetchOnTheAirTV(),
+      onOk: (rows) => {
+        setSectionData('series-on-air', rows);
+        fillCarousel('series-on-air', rotate(rows, 0).slice(0, 8));
+      },
+      onFail: () => fillErrorCard('series-on-air', msg)
+    }
+  ];
+
+  Promise.all(secondaryTasks.map(async (task) => {
+    try {
+      const rows = await task.fetcher();
+      task.onOk(Array.isArray(rows) ? rows : []);
+    } catch (error) {
+      console.warn('Secondary section load failed:', error);
+      task.onFail();
+    }
+  }));
 }
 
 async function handleMediaOpen(target, id) {
   if (!window.PlotData) return;
   let mediaId = '';
   let mediaType = '';
+  let preferredSeason = null;
   const container = target.closest('[data-media-id][data-media-type]');
   if (container) {
     mediaId = String(container.dataset.mediaId || '').trim();
     mediaType = String(container.dataset.mediaType || '').trim();
+    const rowSeason = Number(container.dataset.nextSeason || '');
+    if (Number.isFinite(rowSeason) && rowSeason > 0) preferredSeason = rowSeason;
   } else {
     mediaType = id === 'movie-detail' ? 'movie' : 'tv';
     const card = target.closest('.card,.list-item');
@@ -916,14 +1715,14 @@ async function handleMediaOpen(target, id) {
     if (id === 'series-detail' && mediaType === 'tv') {
       const show = await window.PlotData.fetchTVDetail(mediaId);
       if (requestId !== detailRequestSeq.tv) return;
-      renderSeriesDetail(show);
+      renderSeriesDetail(show, { preferredSeason });
     }
   } catch (error) {
     console.warn('Failed to load detail:', error);
     const fallback = mediaType === 'movie' ? knownMedia.movieById.get(mediaId) : knownMedia.tvById.get(mediaId);
     if (fallback) {
       if (mediaType === 'movie') renderMovieDetail(fallback);
-      if (mediaType === 'tv') renderSeriesDetail(fallback);
+      if (mediaType === 'tv') renderSeriesDetail(fallback, { preferredSeason });
     }
   }
 }
@@ -962,6 +1761,7 @@ function loadState() {
       sortMode: typeof parsed.sortMode === 'string' ? parsed.sortMode : 'custom',
       customOrder: Array.isArray(parsed.customOrder) ? parsed.customOrder.filter((x) => typeof x === 'string') : [],
       localFolderName: typeof parsed.localFolderName === 'string' ? parsed.localFolderName : '',
+      localFolderUri: typeof parsed.localFolderUri === 'string' ? parsed.localFolderUri : '',
       episodeCounts: parsed.episodeCounts && typeof parsed.episodeCounts === 'object' ? parsed.episodeCounts : {},
       myMoviesWatchlist: cleanObjArray(parsed.myMoviesWatchlist),
       myMoviesWatched: cleanObjArray(parsed.myMoviesWatched),
@@ -979,6 +1779,7 @@ function loadState() {
       sortMode: 'custom',
       customOrder: [],
       localFolderName: '',
+      localFolderUri: '',
       episodeCounts: {},
       myMoviesWatchlist: [],
       myMoviesWatched: [],
@@ -1001,6 +1802,7 @@ function saveState() {
       sortMode: state.sortMode,
       customOrder,
       localFolderName: state.localFolderName,
+      localFolderUri: state.localFolderUri,
       episodeCounts: state.episodeCounts,
       myMoviesWatchlist: state.myMoviesWatchlist,
       myMoviesWatched: state.myMoviesWatched,
@@ -1074,6 +1876,7 @@ function openSheet(id) {
 function closeSheets() {
   sheets.forEach((sheet) => sheet.classList.remove('active'));
   overlay.classList.remove('active');
+  closeQuickContextMenu();
 }
 
 function renderCastSheet() {
@@ -1201,7 +2004,7 @@ function applyEpisodeState() {
 
 function updateOrbitProgressFromEpisodes() {
   const episodes = Array.from(document.querySelectorAll('.episode'));
-  const orbitRow = Array.from(document.querySelectorAll('#series-watched-list .list-item')).find((item) => {
+  const orbitRow = Array.from(document.querySelectorAll('#series-watching-list .list-item')).find((item) => {
     return item.querySelector('.item-title')?.textContent.trim() === 'Orbit Line';
   });
   if (!orbitRow) return;
@@ -1288,8 +2091,54 @@ function sortWatchedList(mode) {
 
 function wireEvents() {
   document.addEventListener('click', async (event) => {
+    if (suppressNextClick) {
+      event.preventDefault();
+      event.stopPropagation();
+      suppressNextClick = false;
+      return;
+    }
+
     const targetEl = asElement(event.target);
     if (!targetEl) return;
+    if (quickContextMenu && quickContextMenu.classList.contains('active')) {
+      if (!targetEl.closest('#quick-context-menu') && !(quickActionAnchorEl && quickActionAnchorEl.contains(targetEl))) {
+        closeQuickContextMenu();
+      }
+    }
+
+    const actionEl = targetEl.closest('[data-action]');
+    if (actionEl && actionEl.dataset.action === 'toggle-genres') {
+      genresExpanded = !genresExpanded;
+      renderHomeGenres();
+      return;
+    }
+
+    const listViewBtn = targetEl.closest('[data-list-items-view]');
+    if (listViewBtn) {
+      listItemsViewMode = listViewBtn.dataset.listItemsView === 'grid' ? 'grid' : 'list';
+      document.querySelectorAll('[data-list-items-view]').forEach((btn) => {
+        btn.classList.toggle('active', btn === listViewBtn);
+      });
+      renderListEditorItems();
+      return;
+    }
+
+    const filterBtn = targetEl.closest('[data-catalog-filter]');
+    if (filterBtn) {
+      const mode = String(filterBtn.dataset.catalogFilter || 'all');
+      catalogState.mediaFilter = (mode === 'movie' || mode === 'tv') ? mode : 'all';
+      updateCatalogFilterUI();
+      renderCatalogCards(catalogState.items, false);
+      if (catalogState.items.length) {
+        const filteredCount = catalogState.mediaFilter === 'all'
+          ? catalogState.items.length
+          : catalogState.items.filter((item) => item.mediaType === catalogState.mediaFilter).length;
+        if (catalogLoading) {
+          catalogLoading.textContent = filteredCount ? 'Scroll for more' : 'No items for this filter';
+        }
+      }
+      return;
+    }
 
     const genreChip = targetEl.closest('[data-genre]');
     if (genreChip) {
@@ -1318,6 +2167,21 @@ function wireEvents() {
       return;
     }
 
+    const addToListBtn = targetEl.closest('[data-add-to-list-id]');
+    if (addToListBtn) {
+      event.preventDefault();
+      event.stopPropagation();
+      const listId = String(addToListBtn.dataset.addToListId || '');
+      const list = (state.customLists || []).find((row) => String(row.id) === listId);
+      if (!list) {
+        setAddToListMessage('List not found.', true);
+        return;
+      }
+      const result = addCurrentTargetToList(list);
+      setAddToListMessage(result.reason, !result.ok);
+      return;
+    }
+
     const removeListItem = targetEl.closest('[data-remove-list-item]');
     if (removeListItem) {
       event.preventDefault();
@@ -1342,6 +2206,7 @@ function wireEvents() {
       if (screenId === 'movies') state.moviesViewMode = mode;
       if (screenId === 'series') state.seriesViewMode = mode;
       saveState();
+      renderMyLists();
       return;
     }
 
@@ -1382,6 +2247,55 @@ function wireEvents() {
       state.myMoviesWatched = state.myMoviesWatched.filter((item) => String(item.id) !== id);
       saveState();
       renderMyLists();
+      return;
+    }
+
+    const seriesRemove = targetEl.closest('[data-series-remove]');
+    if (seriesRemove) {
+      event.preventDefault();
+      event.stopPropagation();
+      const id = String(seriesRemove.dataset.seriesRemove || '');
+      clearSeriesEpisodeCounts(id);
+      state.mySeriesWatched = state.mySeriesWatched.filter((item) => String(item.id) !== id);
+      saveState();
+      renderMyLists();
+      sortWatchedList(state.sortMode);
+      return;
+    }
+
+    const nextDec = targetEl.closest('[data-next-dec]');
+    if (nextDec) {
+      event.preventDefault();
+      event.stopPropagation();
+      const id = String(nextDec.dataset.nextDec || '');
+      const row = findStoredItem(state.mySeriesWatched, id);
+      if (!row) return;
+      await ensureSeriesSeasonBounds(row);
+      const next = stepSeriesPointer(row, -1);
+      row.nextSeason = next.nextSeason;
+      row.nextEpisode = next.nextEpisode;
+      syncSeriesProgressFromPointer(row);
+      saveState();
+      renderMyLists();
+      sortWatchedList(state.sortMode);
+      return;
+    }
+
+    const nextInc = targetEl.closest('[data-next-inc]');
+    if (nextInc) {
+      event.preventDefault();
+      event.stopPropagation();
+      const id = String(nextInc.dataset.nextInc || '');
+      const row = findStoredItem(state.mySeriesWatched, id);
+      if (!row) return;
+      await ensureSeriesSeasonBounds(row);
+      const next = stepSeriesPointer(row, 1);
+      row.nextSeason = next.nextSeason;
+      row.nextEpisode = next.nextEpisode;
+      syncSeriesProgressFromPointer(row);
+      saveState();
+      renderMyLists();
+      sortWatchedList(state.sortMode);
       return;
     }
 
@@ -1519,6 +2433,10 @@ function wireEvents() {
     const closeTarget = targetEl.closest('[data-close]');
     if (closeTarget) {
       const activeScreen = closeTarget.closest('.screen.active');
+      if (activeScreen && activeScreen.id === 'catalog-screen') {
+        showScreen(lastMainScreenId || previousScreenId || 'home');
+        return;
+      }
       if (activeScreen && activeScreen.id === 'trailers-screen') {
         showScreen(lastDetailScreenId || previousScreenId || 'home');
         return;
@@ -1706,17 +2624,105 @@ function wireEvents() {
     });
   }
 
+  if (quickCreateListBtn) {
+    quickCreateListBtn.addEventListener('click', (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      createListFromQuickInput();
+    });
+  }
+
+  if (quickActionWatchlistBtn) {
+    quickActionWatchlistBtn.addEventListener('click', async (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      const target = quickActionTarget;
+      if (!target) return;
+      const item = await getMediaItemById(target.mediaType, target.id);
+      const result = await addItemToWatchlist(item);
+      setQuickActionMessage(result.reason, !result.ok);
+      if (result.ok) setTimeout(closeQuickContextMenu, 280);
+    });
+  }
+
+  if (quickActionWatchedBtn) {
+    quickActionWatchedBtn.addEventListener('click', async (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      const target = quickActionTarget;
+      if (!target) return;
+      const item = await getMediaItemById(target.mediaType, target.id);
+      const result = await addItemToWatched(item);
+      setQuickActionMessage(result.reason, !result.ok);
+      if (result.ok) setTimeout(closeQuickContextMenu, 280);
+    });
+  }
+
+  if (quickActionAddListBtn) {
+    quickActionAddListBtn.addEventListener('click', async (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      const target = quickActionTarget;
+      if (!target) return;
+      const item = await getMediaItemById(target.mediaType, target.id);
+      if (!item) {
+        setQuickActionMessage('Title not found.', true);
+        return;
+      }
+      closeQuickContextMenu();
+      addToListTarget = simplifyItem(item);
+      renderAddToListSheet(item);
+      closeSheets();
+      openSheet('add-to-list-sheet');
+    });
+  }
+
+  if (quickListNameInput) {
+    quickListNameInput.addEventListener('keydown', (event) => {
+      if (event.key !== 'Enter') return;
+      event.preventDefault();
+      createListFromQuickInput();
+    });
+  }
+
+  window.onNativeFolderPicked = (name, uri) => {
+    setLocalFolder(String(name || 'Selected folder'), String(uri || ''));
+  };
+
+  window.onNativeFolderPickError = (message) => {
+    if (message) alert(String(message));
+  };
+
+  if (folderPickerInput) {
+    folderPickerInput.addEventListener('change', () => {
+      const files = Array.from(folderPickerInput.files || []);
+      if (!files.length) return;
+      const first = files[0];
+      const rel = String(first.webkitRelativePath || '');
+      const rootName = rel.includes('/') ? rel.split('/')[0] : (first.name || 'Selected folder');
+      setLocalFolder(rootName, '');
+      folderPickerInput.value = '';
+    });
+  }
+
   if (selectFolderBtn) {
     selectFolderBtn.addEventListener('click', async () => {
+      if (window.PlotAndroid && typeof window.PlotAndroid.pickLocalFolder === 'function') {
+        window.PlotAndroid.pickLocalFolder();
+        return;
+      }
       if (!window.showDirectoryPicker) {
+        if (folderPickerInput) {
+          folderPickerInput.click();
+          return;
+        }
         alert('Folder selection is not supported on this browser.');
         return;
       }
       try {
         const handle = await window.showDirectoryPicker();
-        state.localFolderName = handle && handle.name ? handle.name : 'Selected folder';
-        saveState();
-        renderFolderStatus();
+        const name = handle && handle.name ? handle.name : 'Selected folder';
+        setLocalFolder(name, '');
       } catch {
         // User canceled; do nothing.
       }
@@ -1775,6 +2781,12 @@ function wireEvents() {
     });
   }
 
+  if (movieAddListBtn) {
+    movieAddListBtn.addEventListener('click', async () => {
+      await openAddToList('movie');
+    });
+  }
+
   if (seriesWatchlistBtn) {
     seriesWatchlistBtn.addEventListener('click', async () => {
       const show = await getSelectedSeries();
@@ -1797,25 +2809,36 @@ function wireEvents() {
     seriesWatchedBtn.addEventListener('click', async () => {
       const show = await getSelectedSeries();
       if (!show) return;
-      const totalEpisodes = totalEpisodesForShow(show);
+      const watchedScan = await markAiredEpisodesAsWatched(show);
+      const totalEpisodes = Math.max(0, Number(watchedScan.airedCount) || 0);
       const existing = findStoredItem(state.mySeriesWatched, show.id);
+      const markAllSeen = totalEpisodes;
+      const nextSeason = Math.max(1, Number(watchedScan.nextSeason) || 1);
+      const nextEpisode = Math.max(1, Number(watchedScan.nextEpisode) || 1);
       if (existing) {
-        existing.count = (Number(existing.count) || 1) + 1;
-        existing.left = Math.max(0, (Number(existing.totalEpisodes) || totalEpisodes || 0) - existing.count);
+        existing.count = markAllSeen;
+        existing.totalEpisodes = markAllSeen;
+        existing.left = 0;
+        existing.nextSeason = nextSeason;
+        existing.nextEpisode = nextEpisode;
+        existing.inProduction = Boolean(show.inProduction);
+        existing.status = show.status || '';
+        existing.nextAirDate = show.nextAirDate || '';
       } else {
         const row = simplifyItem(show);
-        row.count = 1;
-        row.totalEpisodes = totalEpisodes;
-        row.left = Math.max(0, totalEpisodes - 1);
-        row.nextSeason = 1;
-        row.nextEpisode = 2;
+        row.count = markAllSeen;
+        row.totalEpisodes = markAllSeen;
+        row.left = 0;
+        row.nextSeason = nextSeason;
+        row.nextEpisode = nextEpisode;
+        row.nextAirDate = show.nextAirDate || '';
         row.added = new Date().toISOString().slice(0, 10);
         state.mySeriesWatched.unshift(row);
       }
       saveState();
       renderMyLists();
       sortWatchedList(state.sortMode);
-      seriesWatchedBtn.textContent = 'Watched +1';
+      seriesWatchedBtn.textContent = 'Marked watched';
     });
   }
 
@@ -1831,6 +2854,12 @@ function wireEvents() {
       } catch {
         renderTrailersScreen(show.title, []);
       }
+    });
+  }
+
+  if (seriesAddListBtn) {
+    seriesAddListBtn.addEventListener('click', async () => {
+      await openAddToList('tv');
     });
   }
 
@@ -1884,14 +2913,31 @@ function wireEvents() {
   if (catalogScreen) {
     catalogScreen.addEventListener('scroll', () => {
       if (currentScreenId !== 'catalog-screen') return;
-      const nearBottom = catalogScreen.scrollTop + catalogScreen.clientHeight >= catalogScreen.scrollHeight - 220;
+      const nearBottom = catalogScreen.scrollTop + catalogScreen.clientHeight >= catalogScreen.scrollHeight - 700;
       if (nearBottom) loadMoreCatalog();
+    });
+  }
+
+  if (catalogLoadMoreBtn) {
+    catalogLoadMoreBtn.addEventListener('click', async () => {
+      await loadMoreCatalog();
+      await loadMoreCatalog();
+    });
+  }
+
+  if (catalogBackBtn) {
+    catalogBackBtn.addEventListener('click', (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      showScreen(lastMainScreenId || previousScreenId || 'home');
     });
   }
 }
 
 async function bootstrap() {
   try {
+    setupBrandLogo();
+
     if (!state.users.length) {
       state.users.push({
         name: 'Ruthvik',
@@ -1909,8 +2955,10 @@ async function bootstrap() {
     renderMyLists();
     renderListsHome();
     renderFolderStatus();
+    renderHomeGenres();
     renderAccountUI();
     wireEvents();
+    setupLongPressActions();
 
     const moviesScreen = document.getElementById('movies');
     const seriesScreen = document.getElementById('series');
@@ -1936,7 +2984,7 @@ async function bootstrap() {
     if (initialPill) updateOptionBubble(initialPill);
 
     sortWatchedList(state.sortMode);
-    await loadDynamicContent();
+    loadDynamicContent();
   } catch (error) {
     console.error('Bootstrap failed:', error);
     wireEvents();

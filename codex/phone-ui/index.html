@@ -11,22 +11,27 @@
 </head>
 <body>
   <div class="phone">
-    <div class="status">
-      <span>9:41</span>
-      <div class="status-icons">
-        <span class="dot"></span>
-        <span class="dot"></span>
-        <span class="dot"></span>
-        <span class="battery"></span>
-      </div>
-    </div>
 
     <main class="app">
       <section id="home" class="screen active">
         <header class="hero">
           <div class="brand-row">
             <div class="brand">
-            <div class="logo">RT</div>
+            <div class="logo" aria-label="PLOT logo">
+              <img
+                id="plot-logo-img"
+                src="assets/plot-logo.png"
+                alt="PLOT logo"
+              />
+              <svg viewBox="0 0 64 64" role="img" aria-hidden="true" style="display:none;">
+                <rect x="10" y="14" width="44" height="36" rx="8"></rect>
+                <path d="M25 24l18 8-18 8z"></path>
+                <circle cx="18" cy="20" r="2.4"></circle>
+                <circle cx="46" cy="20" r="2.4"></circle>
+                <circle cx="18" cy="44" r="2.4"></circle>
+                <circle cx="46" cy="44" r="2.4"></circle>
+              </svg>
+            </div>
             <div>
               <div class="brand-title">PLOT</div>
               <div class="brand-sub">Your movie + series log</div>
@@ -45,11 +50,12 @@
             </div>
             <div class="carousel" id="search-results"></div>
           </section>
-          <div class="chips">
+          <div class="chips" id="home-genre-chips">
             <button class="chip" data-genre="Science Fiction">Sci‑Fi</button>
             <button class="chip" data-genre="Drama">Drama</button>
             <button class="chip" data-genre="Animation">Animation</button>
             <button class="chip" data-genre="Thriller">Thriller</button>
+            <button class="chip" data-action="toggle-genres">More</button>
           </div>
         </header>
 
@@ -192,11 +198,14 @@
 
         <section class="section">
           <div class="section-head">
+            <h3>Watching</h3>
+          </div>
+          <div class="list" id="series-watching-list"></div>
+        </section>
+
+        <section class="section">
+          <div class="section-head">
             <h3>Watched</h3>
-            <div class="head-right">
-              <div class="next-up" id="next-up-label">Next up: S3 E1</div>
-              <button class="text-btn sort-btn" data-open="sort-menu">Sort</button>
-            </div>
           </div>
           <div class="list" id="series-watched-list"></div>
         </section>
@@ -230,25 +239,6 @@
 
         <section class="section">
           <div class="section-head">
-            <h3>Top Shows (IMDb)</h3>
-            <button class="text-btn" data-see-all="series-top">See all</button>
-          </div>
-          <div class="carousel" id="series-top">
-            <article class="card" data-open="series-detail">
-              <div class="poster series alt"></div>
-              <div class="card-title">Paper District</div>
-              <div class="card-meta">Rank #4</div>
-            </article>
-            <article class="card" data-open="series-detail">
-              <div class="poster series alt2"></div>
-              <div class="card-title">Zero Hour</div>
-              <div class="card-meta">Rank #6</div>
-            </article>
-          </div>
-        </section>
-
-        <section class="section">
-          <div class="section-head">
             <h3>On The Air</h3>
             <button class="text-btn">Latest</button>
           </div>
@@ -264,12 +254,21 @@
 
       <section id="catalog-screen" class="screen" data-hide-tabs="true">
         <header class="page-head">
+          <button class="icon-btn" id="catalog-back-btn" data-close aria-label="Back">←</button>
           <h2 id="catalog-title">Catalog</h2>
           <button class="icon-btn" data-open="home">⌂</button>
         </header>
+        <div class="catalog-filter-row" id="catalog-filter-row">
+          <button class="pill active" data-catalog-filter="all">All</button>
+          <button class="pill" data-catalog-filter="movie">Movies</button>
+          <button class="pill" data-catalog-filter="tv">Series</button>
+        </div>
         <section class="section">
           <div class="poster-grid" id="catalog-grid"></div>
           <div class="catalog-loading" id="catalog-loading">Scroll for more</div>
+          <div class="catalog-load-more-wrap">
+            <button class="pill" id="catalog-load-more-btn">Load more</button>
+          </div>
         </section>
       </section>
 
@@ -291,6 +290,7 @@
             <button class="btn solid" id="movie-watched-btn">Watched</button>
           </div>
           <div class="action-row">
+            <button class="btn outline" id="movie-add-list-btn">Add to List</button>
             <button class="btn outline" id="movie-trailers-btn">Trailers</button>
           </div>
           <div class="chips" id="movie-detail-providers">
@@ -365,6 +365,9 @@
             <button class="btn outline" id="series-watched-btn">Add to Watched</button>
             <button class="btn outline" id="series-trailers-btn">Trailers</button>
           </div>
+          <div class="action-row">
+            <button class="btn outline" id="series-add-list-btn">Add to List</button>
+          </div>
 
           <div class="section">
             <div class="section-head">
@@ -400,7 +403,8 @@
 
       <section id="list-detail" class="screen" data-hide-tabs="true">
         <header class="page-head">
-          <h2>List</h2>
+          <button class="icon-btn" data-open="lists" aria-label="Back">←</button>
+          <h2 class="list-detail-title">List</h2>
           <button class="btn solid" id="save-list-btn">Save</button>
         </header>
         <section class="section">
@@ -417,7 +421,10 @@
         <section class="section">
           <div class="section-head">
             <h3>Titles In List</h3>
-            <button class="text-btn" data-open="lists">Back</button>
+            <div class="view-toggle">
+              <button class="pill active" data-list-items-view="list">List</button>
+              <button class="pill" data-list-items-view="grid">Grid</button>
+            </div>
           </div>
           <div class="list" id="list-items"></div>
         </section>
@@ -549,6 +556,7 @@
               </div>
               <button class="pill" id="select-folder-btn">Choose</button>
             </div>
+            <input id="folder-picker-input" type="file" webkitdirectory directory multiple hidden />
           </div>
         </section>
 
@@ -647,6 +655,30 @@
       <div class="chips" id="episode-sheet-providers">
         <button class="chip">Not available</button>
       </div>
+    </div>
+
+    <div id="add-to-list-sheet" class="sheet">
+      <div class="sheet-handle"></div>
+      <div class="sheet-head">
+        <h3 id="add-to-list-title">Add To List</h3>
+        <button class="icon-btn close" data-close>✕</button>
+      </div>
+      <div class="quick-list-row">
+        <input id="quick-list-name-input" class="list-input" type="text" placeholder="New list name" />
+        <button class="pill" id="quick-create-list-btn">Create</button>
+      </div>
+      <div class="list" id="add-to-list-options"></div>
+      <div class="hint" id="add-to-list-message"></div>
+    </div>
+
+    <div id="quick-context-menu" class="quick-context-menu" role="dialog" aria-label="Title actions">
+      <div class="quick-context-title" id="quick-title-actions-title">Title Actions</div>
+      <div class="quick-context-actions">
+        <button class="quick-action-btn" id="quick-action-watchlist">Add to Watchlist</button>
+        <button class="quick-action-btn" id="quick-action-watched">Add to Watched</button>
+        <button class="quick-action-btn" id="quick-action-add-list">Add to List</button>
+      </div>
+      <div class="quick-context-message" id="quick-title-actions-message"></div>
     </div>
 
     <div id="sort-menu" class="menu">

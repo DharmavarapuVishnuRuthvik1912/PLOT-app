@@ -81,7 +81,7 @@ body {
 .screen.active { display: block; }
 
 .hero {
-  padding-top: 6px;
+  padding-top: 30px;
 }
 
 .brand {
@@ -98,10 +98,26 @@ body {
 }
 
 .logo {
-  width: 44px; height: 44px; border-radius: 14px;
+  width: 56px; height: 44px; border-radius: 14px;
   display: grid; place-items: center;
   background: linear-gradient(135deg, #ffb000, #ff7b00);
-  color: #121212; font-weight: 700; letter-spacing: 1px;
+  color: #121212;
+  overflow: hidden;
+}
+
+.logo svg {
+  width: 30px;
+  height: 30px;
+  fill: #111;
+}
+
+.logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+  transform: scale(1.2);
+  transform-origin: center;
 }
 
 .brand-title {
@@ -404,7 +420,7 @@ body {
 
 .page-head {
   display: flex; align-items: center; justify-content: space-between;
-  padding-top: 10px;
+  padding-top: 18px;
   position: sticky;
   top: 0;
   background: linear-gradient(180deg, #151515 0%, rgba(21, 21, 21, 0.7) 100%);
@@ -415,6 +431,40 @@ body {
 .page-head h2 {
   font-family: "Bebas Neue", sans-serif;
   letter-spacing: 1px; font-size: 28px; margin: 0;
+}
+
+#list-detail .page-head {
+  gap: 10px;
+}
+
+#list-detail .list-detail-title {
+  margin-right: auto;
+  margin-left: 4px;
+}
+
+#catalog-screen .page-head {
+  padding-top: 18px;
+}
+
+#catalog-screen .page-head h2 {
+  margin-left: 10px;
+  transition: transform 0.25s ease;
+}
+
+#catalog-screen.genre-heading-shift .page-head h2 {
+  transform: translateX(8px);
+}
+
+.catalog-filter-row {
+  display: none;
+  gap: 8px;
+  padding: 8px 0 12px 4px;
+}
+
+.catalog-load-more-wrap {
+  display: flex;
+  justify-content: center;
+  padding-bottom: 14px;
 }
 
 .view-toggle { display: flex; gap: 8px; }
@@ -435,9 +485,160 @@ body {
   background: var(--surface); border-radius: 16px; padding: 10px;
 }
 
+#add-to-list-options .list-item {
+  width: 100%;
+  border: 1px solid #3a3a3a;
+  color: var(--text);
+  background: var(--surface);
+  text-align: left;
+  cursor: pointer;
+}
+
+.quick-list-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.quick-list-row .list-input {
+  margin-top: 0;
+}
+
+#quick-create-list-btn {
+  flex: 0 0 auto;
+  min-width: 82px;
+  background: var(--accent);
+  color: #111;
+  border-color: transparent;
+  font-weight: 700;
+}
+
+#quick-create-list-btn:active {
+  transform: translateY(1px) scale(0.99);
+}
+
+#add-to-list-message {
+  min-height: 18px;
+  margin-top: 10px;
+  text-align: center;
+  color: var(--muted);
+}
+
+.quick-action-btn {
+  width: 100%;
+  border: 1px solid #3a3a3a;
+  color: var(--text);
+  background: var(--surface-2);
+  text-align: left;
+  cursor: pointer;
+  font-weight: 600;
+  border-radius: 12px;
+  padding: 10px 12px;
+}
+
+.quick-action-btn:active {
+  transform: scale(0.99);
+}
+
+.quick-context-menu {
+  position: fixed;
+  z-index: 12;
+  width: min(290px, calc(100vw - 24px));
+  background: linear-gradient(180deg, #1f1f1f 0%, #171717 100%);
+  border: 1px solid rgba(255, 176, 0, 0.25);
+  border-radius: 14px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.55);
+  padding: 10px;
+  display: none;
+}
+
+.quick-context-menu.active {
+  display: block;
+}
+
+.quick-context-menu::before {
+  content: "";
+  position: absolute;
+  left: var(--arrow-x, 24px);
+  width: 12px;
+  height: 12px;
+  transform: rotate(45deg);
+  background: #1e1e1e;
+  border-left: 1px solid rgba(255, 176, 0, 0.25);
+  border-top: 1px solid rgba(255, 176, 0, 0.25);
+  top: -7px;
+  margin-left: -6px;
+}
+
+.quick-context-menu[data-placement="top"]::before {
+  top: auto;
+  bottom: -7px;
+  border-left: none;
+  border-top: none;
+  border-right: 1px solid rgba(255, 176, 0, 0.25);
+  border-bottom: 1px solid rgba(255, 176, 0, 0.25);
+}
+
+.quick-context-title {
+  font-weight: 700;
+  font-size: 14px;
+  margin-bottom: 8px;
+}
+
+.quick-context-actions {
+  display: grid;
+  gap: 8px;
+}
+
+.quick-context-message {
+  min-height: 16px;
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+[data-media-id][data-media-type].longpress-active {
+  outline: 2px solid rgba(255, 176, 0, 0.85);
+  outline-offset: 2px;
+  border-radius: 16px;
+  box-shadow: 0 0 0 4px rgba(255, 176, 0, 0.12);
+}
+
+#add-to-list-options .add-to-list-item {
+  align-items: center;
+}
+
+#add-to-list-options .poster-stack {
+  width: 58px;
+  height: 46px;
+  flex: 0 0 58px;
+}
+
+#add-to-list-options .stack-poster {
+  width: 32px;
+  height: 46px;
+  border-radius: 8px;
+}
+
+#add-to-list-options .stack-poster:nth-child(2) { left: 9px; }
+#add-to-list-options .stack-poster:nth-child(3) { left: 18px; }
+
 .thumb {
   width: 46px; height: 62px; border-radius: 10px;
   background: linear-gradient(135deg, #2a2a2a, #3a3a3a);
+}
+
+.thumb-wrap {
+  position: relative;
+  width: 46px;
+  height: 62px;
+  flex: 0 0 auto;
+}
+
+.thumb-wrap .thumb {
+  width: 100%;
+  height: 100%;
 }
 
 .thumb.alt { background: linear-gradient(135deg, #273043, #3a506b); }
@@ -625,6 +826,204 @@ body {
   padding: 4px 8px;
   border-radius: 999px;
   cursor: pointer;
+}
+
+.watched-dot {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: #111;
+  background: var(--accent);
+  border: 1px solid rgba(255, 176, 0, 0.8);
+  box-shadow: 0 0 0 2px rgba(20, 20, 20, 0.9);
+}
+
+#list-items.grid-mode {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+#list-items.grid-mode .list-item {
+  display: grid;
+  grid-template-columns: 1fr;
+  align-items: start;
+  gap: 8px;
+}
+
+#list-items.grid-mode .thumb-wrap {
+  width: 100%;
+  height: 150px;
+}
+
+#list-items.grid-mode .thumb {
+  border-radius: 12px;
+}
+
+#list-items.grid-mode .movie-action {
+  justify-self: start;
+}
+
+.next-stepper {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 176, 0, 0.12);
+  border: 1px solid rgba(255, 176, 0, 0.35);
+  border-radius: 999px;
+  padding: 3px;
+}
+
+.movie-watch-stepper { margin-top: 8px; }
+#movies.list-mode .movie-watch-stepper { margin-left: auto; margin-top: 0; }
+#movies:not(.list-mode) .movie-watch-stepper { margin-left: 0; }
+
+#movies-watched-list {
+  display: grid;
+  gap: 12px;
+}
+
+#movies:not(.list-mode) #movies-watched-list {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+#movies.list-mode #movies-watched-list {
+  grid-template-columns: 1fr;
+}
+
+.series-watching-card {
+  background: var(--surface);
+  border: 1px solid #2f2f2f;
+  border-radius: 16px;
+  padding: 10px;
+  cursor: pointer;
+}
+
+.series-watching-card .thumb-wrap {
+  width: 100%;
+  height: 170px;
+  position: relative;
+}
+
+.series-watching-card .thumb {
+  width: 100%;
+  height: 100%;
+  border-radius: 12px;
+  background-size: cover;
+  background-position: center;
+}
+
+.series-watching-card .remove-btn {
+  top: 8px;
+  right: 8px;
+}
+
+.series-watching-card .item-title {
+  margin-top: 8px;
+}
+
+.series-watching-card .next-stepper {
+  margin-top: 8px;
+  margin-left: 0;
+}
+
+#series-watching-list {
+  display: grid;
+  gap: 12px;
+}
+
+#series:not(.list-mode) #series-watching-list {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+#series.list-mode #series-watching-list {
+  grid-template-columns: 1fr;
+}
+
+.movie-watched-card {
+  background: var(--surface);
+  border: 1px solid #2f2f2f;
+  border-radius: 16px;
+  padding: 10px;
+  cursor: pointer;
+}
+
+.movie-watched-card .thumb-wrap {
+  width: 100%;
+  height: 170px;
+  position: relative;
+}
+
+.movie-watched-card .thumb {
+  width: 100%;
+  height: 100%;
+  border-radius: 12px;
+  background-size: cover;
+  background-position: center;
+}
+
+.movie-watched-card .remove-btn {
+  top: 8px;
+  right: 8px;
+}
+
+.movie-watched-card .item-title {
+  margin-top: 8px;
+}
+
+.movie-watched-item {
+  align-items: center;
+}
+
+.movie-watched-item .thumb-wrap {
+  width: 60px;
+  height: 80px;
+  position: relative;
+  flex: 0 0 auto;
+}
+
+.movie-watched-item .thumb {
+  width: 100%;
+  height: 100%;
+  border-radius: 10px;
+  background-size: cover;
+  background-position: center;
+}
+
+.movie-watched-item .remove-btn {
+  width: 22px;
+  height: 22px;
+  top: -6px;
+  right: -6px;
+}
+
+.step-btn {
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: 999px;
+  background: rgba(255, 176, 0, 0.2);
+  color: var(--accent);
+  font-weight: 700;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  line-height: 1;
+}
+
+.step-label {
+  padding: 0 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--accent);
 }
 
 .tabbar {
