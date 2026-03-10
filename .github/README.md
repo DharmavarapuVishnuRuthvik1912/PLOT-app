@@ -24,7 +24,7 @@ PLOT is an Android app that helps you manage your personal watchlist for movies 
 | Logic | JavaScript (71%) |
 | Backend / Scripts | Python |
 | Platform | Android (APK) |
-| Build Tool | Vibe Coding |
+| Build Tool | Vibe Coding (Codex) |
 
 ---
 
