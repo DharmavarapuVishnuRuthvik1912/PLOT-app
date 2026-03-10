@@ -31,7 +31,7 @@ PLOT is an Android app that helps you manage your personal watchlist for movies 
 ## 🚀 Getting Started
 
 ### Option 1 — Download APK (Recommended)
-1. Go to the [Releases](../../releases) section
+1. Go to the [Releases](https://github.com/DharmavarapuVishnuRuthvik1912/PLOT-app/releases) section
 2. Download the latest `.apk` file
 3. Enable **Install from Unknown Sources** on your Android device
 4. Install and launch PLOT
