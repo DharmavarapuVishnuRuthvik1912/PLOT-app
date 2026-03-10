@@ -49,8 +49,16 @@ cd PLOT-app
 
 ## 📸 Screenshots
 
-> *(Add your app screenshots here)*
-> Tip: Drag and drop images into this file on GitHub to embed them.
+<img width="1440" height="900" alt="image" src="https://github.com/user-attachments/assets/46a6ea15-f226-4b0f-b903-33344adbd2b9" />
+       Home page
+
+<img width="1440" height="900" alt="image" src="https://github.com/user-attachments/assets/16c819d1-ace6-4127-93bc-850c3c18a8ec" />
+       Movies Page
+
+<img width="1440" height="900" alt="image" src="https://github.com/user-attachments/assets/762590c6-c8e1-4a8f-81e1-6a305c9db594" />
+      Series Page
+
+
 
 ---
 
